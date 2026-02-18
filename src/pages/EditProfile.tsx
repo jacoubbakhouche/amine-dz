@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase';
 
 const EditProfile: React.FC = () => {
     const navigate = useNavigate();
+    const [user, setUser] = useState<any>(null);
     const [fullName, setFullName] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
     const [loading, setLoading] = useState(true);
@@ -23,10 +24,23 @@ const EditProfile: React.FC = () => {
 
     useEffect(() => {
         const fetchUserData = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                setFullName(user.user_metadata?.full_name || '');
-                setAvatarUrl(user.user_metadata?.avatar_url || '');
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (authUser) {
+                setUser(authUser);
+                // Try to fetch from profiles table first
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', authUser.id)
+                    .single();
+
+                if (profile) {
+                    setFullName(profile.full_name || authUser.user_metadata?.full_name || '');
+                    setAvatarUrl(profile.avatar_url || authUser.user_metadata?.avatar_url || '');
+                } else {
+                    setFullName(authUser.user_metadata?.full_name || '');
+                    setAvatarUrl(authUser.user_metadata?.avatar_url || '');
+                }
             }
             setLoading(false);
         };
@@ -35,18 +49,36 @@ const EditProfile: React.FC = () => {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!user) return;
+
         setSaving(true);
         setMessage(null);
 
-        const { error } = await supabase.auth.updateUser({
+        // 1. Update Auth Metadata
+        const { error: authError } = await supabase.auth.updateUser({
             data: {
                 full_name: fullName,
                 avatar_url: avatarUrl
             }
         });
 
-        if (error) {
-            setMessage({ type: 'error', text: error.message });
+        if (authError) {
+            setMessage({ type: 'error', text: authError.message });
+            setSaving(false);
+            return;
+        }
+
+        // 2. Update Profiles Table
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+                full_name: fullName,
+                avatar_url: avatarUrl
+            })
+            .eq('id', user.id);
+
+        if (profileError) {
+            setMessage({ type: 'error', text: profileError.message });
         } else {
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
             // Soft refresh for components listening to auth state

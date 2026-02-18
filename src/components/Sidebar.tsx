@@ -57,6 +57,14 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
 
     const fetchConversations = async () => {
         if (!user) return;
+
+        // Fetch profile data for the avatar
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('avatar_url, full_name')
+            .eq('id', user.id)
+            .single();
+
         const { data } = await supabase
             .from('conversations')
             .select('*')
@@ -64,6 +72,16 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
             .order('created_at', { ascending: false });
 
         if (data) setConversations(data);
+        if (profile) {
+            setUser((prev: any) => ({
+                ...prev,
+                user_metadata: {
+                    ...prev.user_metadata,
+                    avatar_url: profile.avatar_url,
+                    full_name: profile.full_name
+                }
+            }));
+        }
     };
 
     const handleNewChat = () => {

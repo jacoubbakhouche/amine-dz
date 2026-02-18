@@ -36,7 +36,28 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         const checkUser = async () => {
             const { data: { session } } = await supabase.auth.getSession();
-            setUser(session?.user ?? null);
+            if (session?.user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (profile) {
+                    setUser({
+                        ...session.user,
+                        user_metadata: {
+                            ...session.user.user_metadata,
+                            full_name: profile.full_name,
+                            avatar_url: profile.avatar_url
+                        }
+                    });
+                } else {
+                    setUser(session.user);
+                }
+            } else {
+                setUser(null);
+            }
             setLoading(false);
         };
 

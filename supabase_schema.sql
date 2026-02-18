@@ -1,4 +1,13 @@
 -- Create the clinical_data table
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  email TEXT UNIQUE,
+  full_name TEXT,
+  specialty TEXT DEFAULT 'General Dentist',
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS clinical_data (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     source TEXT NOT NULL, -- e.g., 'dental_products' or 'antibiotic_rules'
