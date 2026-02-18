@@ -14,6 +14,7 @@ import Groq from "groq-sdk";
 import { supabase } from '../lib/supabase';
 import { findRelevance, getSystemPrompt } from '../lib/cdss';
 import { useLocation } from 'react-router-dom';
+import BottomNav from '../components/BottomNav';
 
 // استدعاء المفتاح من إعدادات Vercel مباشرة
 const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
@@ -175,8 +176,8 @@ const Chat: React.FC = () => {
         <div className="flex h-screen bg-[#F8F9FC] text-slate-900 font-sans overflow-hidden">
             <Sidebar />
 
-            <main className="flex-1 flex flex-col relative">
-                <div ref={chatEndRef} className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar px-8 py-12">
+            <main className="flex-1 flex flex-col relative pb-20 md:pb-0">
+                <div ref={chatEndRef} className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar px-4 md:px-8 py-6 md:py-12">
                     <div className="max-w-4xl mx-auto w-full">
                         <AnimatePresence>
                             {messages.length === 0 ? (
@@ -184,47 +185,47 @@ const Chat: React.FC = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
-                                    className="flex flex-col items-center justify-center min-h-[60vh]"
+                                    className="flex flex-col items-center justify-center min-h-[50vh] md:min-h-[60vh] py-8"
                                 >
-                                    <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4 text-center">
+                                    <h1 className="text-3xl md:text-5xl font-bold font-heading mb-4 text-center leading-tight">
                                         Clinical Support <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-500">Engine</span><br />
-                                        <span className="text-slate-800">Deterministic Medical Insights</span>
+                                        <span className="text-slate-800">Deterministic Insights</span>
                                     </h1>
-                                    <p className="text-slate-400 text-sm mb-12">Query the official dental guidelines and product databases with zero hallucination.</p>
+                                    <p className="text-slate-400 text-xs md:text-sm mb-8 md:mb-12 text-center max-w-md">Query the official dental guidelines and product databases with zero hallucination.</p>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-12">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full mb-8 md:mb-12">
                                         <PromptCard
-                                            title="Regimen for Abscess (Child)"
+                                            title="Abscess (Child)"
                                             desc="Verify R3 extension rules"
                                             icon={RefreshCw}
                                             onClick={() => handleSendMessage("What is the antibiotic regimen for a dental abscess in a child with red flags?")}
                                         />
                                         <PromptCard
-                                            title="Metformin mechanism"
-                                            desc="Product database search"
+                                            title="Metformin"
+                                            desc="Mechanism of action"
                                             icon={RefreshCw}
                                             onClick={() => handleSendMessage("Explain the mechanism of Metformin based on the official database.")}
                                         />
                                         <PromptCard
-                                            title="Gingivitis Prevention"
+                                            title="Gingivitis"
                                             desc="Hygiène bucco-dentaire"
                                             icon={RefreshCw}
                                             onClick={() => handleSendMessage("How to prevent gingivitis using INTERDENTAL brushes?")}
                                         />
                                         <PromptCard
-                                            title="Endocarditis Prophylaxis"
+                                            title="Endocarditis"
                                             desc="High risk ESC rules"
                                             icon={RefreshCw}
                                             onClick={() => handleSendMessage("What is the ESC prophylaxis regimen for high-risk endocarditis patients?")}
                                         />
                                     </div>
 
-                                    <button className="flex items-center gap-2 text-slate-400 text-sm hover:text-slate-600 transition-colors">
+                                    <button className="flex items-center gap-2 text-slate-400 text-xs md:text-sm hover:text-slate-600 transition-colors">
                                         <RefreshCw className="w-4 h-4" /> Refresh Prompts
                                     </button>
                                 </motion.div>
                             ) : (
-                                <div className="space-y-8 pb-12">
+                                <div className="space-y-6 md:space-y-8 pb-12">
                                     {messages.map((msg, idx) => (
                                         <motion.div
                                             key={idx}
@@ -232,11 +233,11 @@ const Chat: React.FC = () => {
                                             animate={{ opacity: 1, y: 0 }}
                                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                         >
-                                            <div className={`max-w-[80%] p-6 rounded-3xl ${msg.role === 'user'
+                                            <div className={`max-w-[90%] md:max-w-[80%] p-4 md:p-6 rounded-2xl md:rounded-3xl ${msg.role === 'user'
                                                 ? 'bg-primary-600 text-white shadow-lg'
                                                 : 'bg-white text-slate-800 border border-slate-100 shadow-sm'
                                                 }`}>
-                                                <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                                                <p className="whitespace-pre-wrap text-xs md:text-sm leading-relaxed">{msg.content}</p>
                                             </div>
                                         </motion.div>
                                     ))}
@@ -246,9 +247,9 @@ const Chat: React.FC = () => {
                                             animate={{ opacity: 1 }}
                                             className="flex justify-start"
                                         >
-                                            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-2">
+                                            <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm flex items-center gap-2">
                                                 <Loader2 className="w-5 h-5 text-primary-600 animate-spin" />
-                                                <span className="text-sm text-slate-500 font-medium">AI is thinking...</span>
+                                                <span className="text-xs md:text-sm text-slate-500 font-medium">AI is thinking...</span>
                                             </div>
                                         </motion.div>
                                     )}
@@ -259,50 +260,51 @@ const Chat: React.FC = () => {
                 </div>
 
                 {/* Chat Input Area */}
-                <div className="max-w-4xl mx-auto w-full px-8 pb-8">
-                    <div className="bg-white rounded-[32px] p-6 shadow-xl border border-slate-100">
-                        <div className="flex items-center justify-between mb-2 px-2">
-                            <button className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors">
-                                <Globe className="w-3.5 h-3.5" /> All Web <ChevronDown className="w-3.5 h-3.5" />
+                <div className="max-w-4xl mx-auto w-full px-4 md:px-8 pb-4 md:pb-8">
+                    <div className="bg-white rounded-[24px] md:rounded-[32px] p-4 md:p-6 shadow-xl border border-slate-100">
+                        <div className="flex items-center justify-between mb-2 px-1 md:px-2">
+                            <button className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-slate-500 bg-slate-50 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors">
+                                <Globe className="w-3 md:w-3.5 h-3 md:h-3.5" /> All Web <ChevronDown className="w-3 md:w-3.5 h-3 md:h-3.5" />
                             </button>
                         </div>
 
                         <textarea
-                            className="w-full bg-transparent border-none focus:ring-0 text-slate-700 placeholder:text-slate-400 text-lg resize-none px-2 min-h-[60px]"
+                            className="w-full bg-transparent border-none focus:ring-0 text-slate-700 placeholder:text-slate-400 text-sm md:text-lg resize-none px-1 md:px-2 min-h-[40px] md:min-h-[60px]"
                             placeholder="Ask whatever you want...."
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
+                                if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
                                     e.preventDefault();
                                     handleSendMessage();
                                 }
                             }}
                         />
 
-                        <div className="flex items-center gap-4 px-2 pt-4 border-t border-slate-50">
-                            <button className="flex items-center gap-1.5 text-slate-500 text-sm hover:text-primary-600 transition-colors">
-                                <Plus className="w-5 h-5" /> Add Attachment
+                        <div className="flex items-center gap-3 md:gap-4 px-1 md:px-2 pt-3 md:pt-4 border-t border-slate-50">
+                            <button className="flex items-center gap-1.5 text-slate-500 text-xs md:text-sm hover:text-primary-600 transition-colors">
+                                <Plus className="w-4 md:w-5 h-4 md:h-5" /> <span className="hidden sm:inline">Add Attachment</span>
                             </button>
-                            <button className="flex items-center gap-1.5 text-slate-500 text-sm hover:text-primary-600 transition-colors">
-                                <ImageIcon className="w-5 h-5" /> Use Image
+                            <button className="flex items-center gap-1.5 text-slate-500 text-xs md:text-sm hover:text-primary-600 transition-colors">
+                                <ImageIcon className="w-4 md:w-5 h-4 md:h-5" /> <span className="hidden sm:inline">Use Image</span>
                             </button>
 
                             <div className="flex-1" />
 
-                            <div className="flex items-center gap-4">
-                                <span className="text-slate-300 text-xs font-medium">{input.length}/1000</span>
+                            <div className="flex items-center gap-2 md:gap-4">
+                                <span className="hidden xs:inline text-slate-300 text-[10px] md:text-xs font-medium">{input.length}/1000</span>
                                 <button
                                     onClick={() => handleSendMessage()}
                                     disabled={loading || !input.trim()}
-                                    className="bg-primary-600 text-white p-3 rounded-2xl shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-all disabled:opacity-50 disabled:shadow-none"
+                                    className="bg-primary-600 text-white p-2.5 md:p-3 rounded-xl md:rounded-2xl shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-all disabled:opacity-50 disabled:shadow-none"
                                 >
-                                    <Send className="w-5 h-5" />
+                                    <Send className="w-4 md:w-5 h-4 md:h-5" />
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
+                <BottomNav />
             </main>
         </div>
     );

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
 
 const ActionCard = ({ icon: Icon, title, desc, color, to }: { icon: any, title: string, desc: string, color: string, to?: string }) => (
@@ -84,10 +85,10 @@ const Dashboard: React.FC = () => {
             <Sidebar />
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar no-scrollbar">
+            <main className="flex-1 flex flex-col overflow-y-auto custom-scrollbar no-scrollbar pb-24 md:pb-0">
                 {/* Top Header */}
-                <header className="px-12 py-8 flex items-center justify-between">
-                    <div className="flex items-center gap-12 font-medium text-slate-400">
+                <header className="px-6 md:px-12 py-6 md:py-8 flex items-center justify-between">
+                    <div className="flex items-center gap-6 md:gap-12 font-medium text-slate-400 overflow-x-auto no-scrollbar whitespace-nowrap">
                         <span className="text-slate-900 font-bold border-b-2 border-slate-900 pb-1">Dashboard</span>
                         <span className="hover:text-slate-600 cursor-pointer transition-colors">Schedule</span>
                         <span className="hover:text-slate-600 cursor-pointer transition-colors">Patients</span>
@@ -95,20 +96,20 @@ const Dashboard: React.FC = () => {
                 </header>
 
                 {/* Content Area */}
-                <div className="px-12 pb-12 flex-1">
-                    <div className="grid lg:grid-cols-[1fr,400px] gap-12 items-start">
+                <div className="px-6 md:px-12 pb-12 flex-1">
+                    <div className="grid lg:grid-cols-[1fr,400px] gap-8 md:gap-12 items-start">
                         {/* Left Column */}
-                        <div className="space-y-12">
+                        <div className="space-y-8 md:space-y-12">
                             <motion.div
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.6 }}
                             >
-                                <h1 className="text-5xl lg:text-6xl font-bold font-heading leading-tight tracking-tight text-slate-900">
+                                <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold font-heading leading-tight tracking-tight text-slate-900">
                                     Hi there, <span className="text-primary-600">Doctor</span><br />
                                     What would you like to check today?
                                 </h1>
-                                <p className="mt-6 text-slate-500 text-lg max-w-xl leading-relaxed">
+                                <p className="mt-4 md:mt-6 text-slate-500 text-base md:text-lg max-w-xl leading-relaxed">
                                     Use our AI assistant to verify clinical guidelines, check dosages, or manage your medical practice with precision.
                                 </p>
                             </motion.div>
@@ -118,19 +119,19 @@ const Dashboard: React.FC = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
-                                className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm transition-all"
+                                className="bg-white p-5 md:p-6 rounded-[24px] md:rounded-[32px] border border-slate-100 shadow-sm transition-all"
                             >
                                 {loading ? (
                                     <div className="flex items-center justify-center p-4">
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                                     </div>
                                 ) : user ? (
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                         <div
                                             onClick={() => navigate('/profile')}
                                             className="flex items-center gap-4 cursor-pointer group/user"
                                         >
-                                            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 overflow-hidden ring-4 ring-primary-50 group-hover/user:ring-primary-100 transition-all">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 overflow-hidden ring-4 ring-primary-50 group-hover/user:ring-primary-100 transition-all">
                                                 <img
                                                     src={user.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200"}
                                                     alt="Avatar"
@@ -138,33 +139,33 @@ const Dashboard: React.FC = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-900 group-hover/user:text-primary-600 transition-colors">Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0]}</h4>
-                                                <p className="text-xs text-slate-400">{user.email}</p>
+                                                <h4 className="font-bold text-slate-900 text-sm md:text-base group-hover/user:text-primary-600 transition-colors">Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0]}</h4>
+                                                <p className="text-[10px] md:text-xs text-slate-400">{user.email}</p>
                                             </div>
                                         </div>
                                         <button
                                             onClick={handleLogout}
-                                            className="flex items-center gap-2 text-rose-500 font-bold text-sm hover:text-rose-600 transition-colors p-2 hover:bg-rose-50 rounded-xl"
+                                            className="flex items-center gap-2 text-rose-500 font-bold text-xs md:text-sm hover:text-rose-600 transition-colors p-2 hover:bg-rose-50 rounded-xl"
                                         >
                                             <LogOut className="w-4 h-4" /> Logout
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="space-y-6">
-                                        <div className="flex flex-col gap-2">
-                                            <h4 className="font-bold text-slate-900 text-xl tracking-tight">Access Medical AI Assistant</h4>
-                                            <p className="text-sm text-slate-500">Sign in to save your clinical history and personalized guidelines.</p>
+                                    <div className="space-y-4 md:space-y-6">
+                                        <div className="flex flex-col gap-1 md:gap-2">
+                                            <h4 className="font-bold text-slate-900 text-lg md:text-xl tracking-tight">Access Medical AI Assistant</h4>
+                                            <p className="text-xs md:text-sm text-slate-500">Sign in to save your clinical history and personalized guidelines.</p>
                                         </div>
-                                        <div className="flex flex-col sm:flex-row gap-4">
+                                        <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                                             <button
                                                 onClick={handleGoogleLogin}
-                                                className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                                                className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-xl md:rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
                                             >
                                                 <Chrome className="w-5 h-5" /> Google
                                             </button>
                                             <Link
                                                 to="/login"
-                                                className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white py-3 rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20"
+                                                className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white py-3 rounded-xl md:rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20"
                                             >
                                                 Sign In <ArrowRight className="w-5 h-5" />
                                             </Link>
@@ -174,7 +175,7 @@ const Dashboard: React.FC = () => {
                             </motion.div>
 
                             {/* Action Cards Grid */}
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                                 <ActionCard
                                     icon={Stethoscope}
                                     title="Start AI Consultation"
@@ -224,6 +225,7 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
                 </div>
+                <BottomNav />
             </main>
         </div>
     );

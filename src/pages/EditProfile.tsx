@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
 
 const EditProfile: React.FC = () => {
@@ -103,23 +104,23 @@ const EditProfile: React.FC = () => {
                     <div className="w-20" /> {/* Spacer */}
                 </header>
 
-                <div className="px-12 max-w-2xl mx-auto pb-20">
+                <div className="px-6 md:px-12 max-w-2xl mx-auto pb-10">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-[32px] border border-slate-100 shadow-xl p-10"
+                        className="bg-white rounded-[24px] md:rounded-[32px] border border-slate-100 shadow-xl p-6 md:p-10"
                     >
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-20 gap-4">
                                 <Loader2 className="w-10 h-10 text-primary-600 animate-spin" />
-                                <p className="text-slate-500 font-medium">Loading profile...</p>
+                                <p className="text-slate-500 font-medium text-sm">Loading profile...</p>
                             </div>
                         ) : (
-                            <form onSubmit={handleSave} className="space-y-10">
+                            <form onSubmit={handleSave} className="space-y-8 md:space-y-10">
                                 {/* Profile Avatar Header */}
                                 <div className="flex flex-col items-center text-center">
                                     <div className="relative group">
-                                        <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-primary-50 ring-4 ring-primary-50/50">
+                                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-primary-50 ring-4 ring-primary-50/50">
                                             <img
                                                 src={avatarUrl || "https://images.unsplash.com/photo-1559839734-2b71f1536783?auto=format&fit=crop&q=80&w=200"}
                                                 alt="Avatar"
@@ -130,14 +131,14 @@ const EditProfile: React.FC = () => {
                                             <Camera className="text-white w-8 h-8" />
                                         </div>
                                     </div>
-                                    <h2 className="mt-4 text-2xl font-bold text-slate-900">Manage Account</h2>
-                                    <p className="text-slate-400 text-sm">Update your public profile information</p>
+                                    <h2 className="mt-4 text-xl md:text-2xl font-bold text-slate-900">Manage Account</h2>
+                                    <p className="text-slate-400 text-xs md:text-sm">Update your public profile information</p>
                                 </div>
 
                                 {/* Form Fields */}
                                 <div className="space-y-6">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 ml-1">Full Name</label>
+                                        <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Full Name</label>
                                         <div className="relative group">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                                 <UserIcon className="h-5 w-5 text-slate-300 group-focus-within:text-primary-500 transition-colors" />
@@ -146,7 +147,7 @@ const EditProfile: React.FC = () => {
                                                 type="text"
                                                 value={fullName}
                                                 onChange={(e) => setFullName(e.target.value)}
-                                                className="block w-full pl-11 bg-slate-50 border-none rounded-2xl py-4 focus:ring-2 focus:ring-primary-500 transition-all font-medium text-slate-700"
+                                                className="block w-full pl-11 bg-slate-50 border-none rounded-xl md:rounded-2xl py-3 md:py-4 focus:ring-2 focus:ring-primary-500 transition-all font-medium text-sm md:text-base text-slate-700"
                                                 placeholder="Dr. John Doe"
                                                 required
                                             />
@@ -154,7 +155,7 @@ const EditProfile: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 ml-1">Avatar URL</label>
+                                        <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Avatar URL</label>
                                         <div className="relative group">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                                 <Camera className="h-5 w-5 text-slate-300 group-focus-within:text-primary-500 transition-colors" />
@@ -163,7 +164,7 @@ const EditProfile: React.FC = () => {
                                                 type="url"
                                                 value={avatarUrl}
                                                 onChange={(e) => setAvatarUrl(e.target.value)}
-                                                className="block w-full pl-11 bg-slate-50 border-none rounded-2xl py-4 focus:ring-2 focus:ring-primary-500 transition-all font-medium text-slate-700"
+                                                className="block w-full pl-11 bg-slate-50 border-none rounded-xl md:rounded-2xl py-3 md:py-4 focus:ring-2 focus:ring-primary-500 transition-all font-medium text-sm md:text-base text-slate-700"
                                                 placeholder="https://images.unsplash.com/..."
                                             />
                                         </div>
@@ -188,18 +189,18 @@ const EditProfile: React.FC = () => {
                                 </AnimatePresence>
 
                                 {/* Actions */}
-                                <div className="flex gap-4 pt-4">
+                                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                                     <button
                                         type="button"
                                         onClick={() => navigate(-1)}
-                                        className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-bold hover:bg-slate-200 transition-all"
+                                        className="w-full sm:flex-1 bg-slate-100 text-slate-600 py-3 md:py-4 rounded-xl md:rounded-2xl font-bold hover:bg-slate-200 transition-all text-sm md:text-base"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="flex-2 bg-primary-600 text-white py-4 px-8 rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                                        className="w-full sm:flex-2 bg-primary-600 text-white py-3 md:py-4 px-8 rounded-xl md:rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2 disabled:opacity-50 text-sm md:text-base"
                                     >
                                         {saving ? (
                                             <Loader2 className="w-5 h-5 animate-spin" />
@@ -213,6 +214,7 @@ const EditProfile: React.FC = () => {
                         )}
                     </motion.div>
                 </div>
+                <BottomNav />
             </main>
         </div>
     );

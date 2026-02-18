@@ -90,7 +90,7 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
     };
 
     return (
-        <div className="flex relative">
+        <div className="hidden md:flex relative h-full">
             <aside className="w-24 border-r border-slate-100 bg-white flex flex-col items-center py-8 gap-10 h-full overflow-y-auto custom-scrollbar no-scrollbar relative z-30">
                 <div className="w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/40 cursor-pointer" onClick={() => navigate('/')}>
                     <Activity className="text-white w-7 h-7" />
