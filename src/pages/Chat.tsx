@@ -20,10 +20,6 @@ import BottomNav from '../components/BottomNav';
 const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
 
 const groq = new Groq({
-    apiKey: groqApiKey,
-    dangerouslyAllowBrowser: true 
-});
-const groq = new Groq({
     apiKey: groqApiKey || 'placeholder_key',
     dangerouslyAllowBrowser: true
 });
