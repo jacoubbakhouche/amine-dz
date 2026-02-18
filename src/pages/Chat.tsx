@@ -15,11 +15,13 @@ import { supabase } from '../lib/supabase';
 import { findRelevance, getSystemPrompt } from '../lib/cdss';
 import { useLocation } from 'react-router-dom';
 
-const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
+const groqApiKey = "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";
 
-if (!groqApiKey) {
-    console.error('Groq API Key is missing. Please add VITE_GROQ_API_KEY to your environment variables.');
-}
+const groq = new Groq({
+    apiKey: groqApiKey,
+    dangerouslyAllowBrowser: true // هادي تسمح للمتصفح يحكي مع Groq مباشرة
+});
+// --- التعدي
 
 const groq = new Groq({
     apiKey: groqApiKey || 'placeholder_key',
