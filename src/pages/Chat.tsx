@@ -10,9 +10,21 @@ import {
     ChevronDown,
     Loader2
 } from 'lucide-react';
-// Note: Groq SDK removed for security. Logic moved to Supabase Edge Functions.
+import Groq from "groq-sdk";
 import { supabase } from '../lib/supabase';
+import { findRelevance, getSystemPrompt } from '../lib/cdss';
 import { useLocation } from 'react-router-dom';
+
+const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
+
+if (!groqApiKey) {
+    console.error('Groq API Key is missing. Please add VITE_GROQ_API_KEY to your environment variables.');
+}
+
+const groq = new Groq({
+    apiKey: groqApiKey || 'placeholder_key',
+    dangerouslyAllowBrowser: true
+});
 
 const PromptCard = ({ title, desc, icon: Icon, onClick }: { title: string, desc: string, icon: any, onClick: () => void }) => (
     <motion.button
@@ -123,17 +135,24 @@ const Chat: React.FC = () => {
         setInput('');
         setLoading(true);
 
+        // CDSS RAG Logic: Fetch clinical context locally in the frontend
+        const context = await findRelevance(text);
+        const systemPrompt = getSystemPrompt(context);
+
         try {
-            const { data: edgeData, error: edgeError } = await supabase.functions.invoke('chat-consultation', {
-                body: {
-                    question: text,
-                    history: messages.map(m => ({ role: m.role, content: m.content }))
-                }
+            const chatCompletion = await groq.chat.completions.create({
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    ...newMessages.map(m => ({
+                        role: m.role,
+                        content: m.content,
+                    }))
+                ],
+                model: "llama-3.3-70b-versatile",
+                temperature: 0.1,
             });
 
-            if (edgeError) throw edgeError;
-
-            const aiResponse = edgeData.content || "No response from AI.";
+            const aiResponse = chatCompletion.choices[0]?.message?.content || "No response generated.";
 
             // Save Assistant Message
             await supabase.from('chat_messages').insert({
@@ -144,8 +163,8 @@ const Chat: React.FC = () => {
 
             setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
         } catch (error) {
-            console.error("Context/Edge Error:", error);
-            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please check if the Edge Function is deployed." }]);
+            console.error("Groq/CDSS Error:", error);
+            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please check your Groq API key in Vercel settings." }]);
         } finally {
             setLoading(false);
         }
