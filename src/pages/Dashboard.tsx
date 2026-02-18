@@ -7,7 +7,6 @@ import {
     BookOpen,
     History,
     Chrome,
-    Mail,
     ArrowRight
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
