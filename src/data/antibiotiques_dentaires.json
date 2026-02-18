@@ -1,0 +1,319 @@
+{
+  "kb_name": "dental_abx_kce_esc",
+  "version": "1.0",
+  "source": {
+    "title": "Fiche Dentistes - prescription prudente d'antibiotiques en pratique dentaire (KCE) + éléments ESC endocardite",
+    "citation": "turn1file0"
+  },
+  "global_principles": [
+    "Le contrôle de la source (traitement dentaire) est prioritaire.",
+    "Les antibiotiques sont rarement indiqués en pratique dentaire.",
+    "Eviter absolument l'antibiotique en l'absence de traitement dentaire adéquat.",
+    "Quand l'antibiotique est envisagé: choisir le schéma recommandé et limiter la durée."
+  ],
+  "red_flags_systemic_or_spread": [
+    "cellulite_faciale",
+    "lymphadenopathie",
+    "fievre",
+    "malaise",
+    "trismus",
+    "dysphagie_ou_problemes_deglutition"
+  ],
+  "rules": [
+    {
+      "id": "R1_pulpite_temporaire",
+      "condition": {
+        "problem": "pulpite_irreversible",
+        "dentition": "temporaire"
+      },
+      "recommendation": {
+        "abx_indicated": "non",
+        "reason": "Pas de bénéfice démontré des antibiotiques en cas de pulpite.",
+        "action_priority": "Traitement dentaire prioritaire; antalgiques/soins de support."
+      }
+    },
+    {
+      "id": "R2_abces_temporaire_sans_extension",
+      "condition": {
+        "problem": "abces_odontogene",
+        "dentition": "temporaire",
+        "has_red_flags": false
+      },
+      "recommendation": {
+        "abx_indicated": "non",
+        "reason": "Pas recommandé en l'absence de signes d'expansion locale ou signes systémiques.",
+        "action_priority": "Traitement dentaire sans délai."
+      }
+    },
+    {
+      "id": "R3_abces_temporaire_avec_extension_ou_systemique",
+      "condition": {
+        "problem": "abces_odontogene",
+        "dentition": "temporaire",
+        "has_red_flags": true
+      },
+      "recommendation": {
+        "abx_indicated": "envisageable",
+        "reason": "Prévenir une diffusion systémique étendue/non contrôlée en présence de signes d'extension/systémiques.",
+        "regimens_child": [
+          {
+            "drug": "amoxicilline",
+            "dose": "75-100 mg/kg/j",
+            "frequency": "en 3 prises/j",
+            "duration": "5 jours",
+            "notes": "Passer au schéma adulte si dose adulte dépassée."
+          },
+          {
+            "drug": "cefuroxime_axetil",
+            "when": "allergie_penicilline_non_IgE",
+            "dose": "30-50 mg/kg/j",
+            "frequency": "en 3 prises/j",
+            "duration": "5 jours"
+          },
+          {
+            "drug": "azithromycine",
+            "when": "allergie_penicilline_IgE",
+            "dose": "10 mg/kg/j",
+            "frequency": "1 prise/j",
+            "duration": "3 jours"
+          }
+        ]
+      }
+    },
+    {
+      "id": "R4_pulpite_definitive_attente_traitement",
+      "condition": {
+        "problem": "pulpite_irreversible",
+        "dentition": "definitive"
+      },
+      "recommendation": {
+        "abx_indicated": "non",
+        "reason": "Non recommandé, y compris dans l'attente du traitement dentaire.",
+        "action_priority": "Traitement dentaire; prise en charge douleur."
+      }
+    },
+    {
+      "id": "R5_parodontite_apicale_ou_abces_apical_sans_red_flags",
+      "condition": {
+        "problem_in": ["parodontite_apicale_symptomatique", "abces_apical_aigu"],
+        "dentition": "definitive",
+        "has_red_flags": false
+      },
+      "recommendation": {
+        "abx_indicated": "non",
+        "reason": "Pas de valeur ajoutée prouvée des antibiotiques dans l'intervalle sans signes d'extension/systémiques.",
+        "action_priority": "Traitement dentaire sans délai."
+      }
+    },
+    {
+      "id": "R6_parodontite_apicale_ou_abces_apical_avec_red_flags",
+      "condition": {
+        "problem_in": ["parodontite_apicale_symptomatique", "abces_apical_aigu"],
+        "dentition": "definitive",
+        "has_red_flags": true
+      },
+      "recommendation": {
+        "abx_indicated": "envisageable",
+        "reason": "Prévenir diffusion systémique étendue/non contrôlée si signes d'extension/systémiques.",
+        "regimens_adult": [
+          {
+            "drug": "amoxicilline",
+            "dose": "500 mg",
+            "frequency": "3x/j",
+            "duration": "3-7 jours"
+          },
+          {
+            "drug": "azithromycine",
+            "when": "allergie_penicilline",
+            "dose": "500 mg",
+            "frequency": "1x/j",
+            "duration": "3 jours"
+          },
+          {
+            "drug": "clarithromycine",
+            "when": "allergie_penicilline",
+            "dose": "500 mg",
+            "frequency": "2x/j",
+            "duration": "3-7 jours"
+          }
+        ],
+        "notes": [
+          "En cas d'allergie à la pénicilline, privilégier macrolides plutôt que clindamycine (risque C. difficile)."
+        ]
+      }
+    },
+    {
+      "id": "R7_reimplantation_avulsion",
+      "condition": {
+        "problem": "reimplantation_apres_avulsion",
+        "dentition": "definitive"
+      },
+      "recommendation": {
+        "abx_indicated": "non",
+        "reason": "Antibiotiques systémiques non recommandés lors de la réimplantation après avulsion."
+      }
+    },
+    {
+      "id": "R8_parodontite_agressive_non_chirurgicale",
+      "condition": {
+        "problem": "parodontite_agressive",
+        "treatment": "non_chirurgical",
+        "has_adequate_periodontal_treatment": true
+      },
+      "recommendation": {
+        "abx_indicated": "envisageable",
+        "reason": "Peut être envisagé en complément d'un traitement parodontal adéquat.",
+        "regimens_adult": [
+          {
+            "drug_combo": ["amoxicilline", "metronidazole"],
+            "dose_each": "500 mg",
+            "frequency": "3x/j",
+            "duration": "3-7 jours"
+          },
+          {
+            "drug": "metronidazole",
+            "when": "allergie_penicilline",
+            "dose": "500 mg",
+            "frequency": "3x/j",
+            "duration": "3-7 jours"
+          }
+        ],
+        "hard_rule": "A eviter en l'absence de traitement parodontal adéquat."
+      }
+    },
+    {
+      "id": "R9_abces_parodontal_ou_pericoronarite_sans_red_flags",
+      "condition": {
+        "problem_in": ["abces_parodontal", "pericoronarite"],
+        "has_red_flags": false
+      },
+      "recommendation": {
+        "abx_indicated": "non",
+        "reason": "Non recommandé sans signes d'expansion locale ou signes systémiques."
+      }
+    },
+    {
+      "id": "R10_pericoronarite_avec_red_flags",
+      "condition": {
+        "problem": "pericoronarite",
+        "has_red_flags": true
+      },
+      "recommendation": {
+        "abx_indicated": "envisageable",
+        "reason": "Envisageable si signes d'extension/systémiques (incluant trismus/dysphagie).",
+        "special_note": "Antibiotiques seulement si, en présence de trismus, un traitement dentaire adéquat est impossible.",
+        "regimens_adult": [
+          {
+            "drug": "amoxicilline",
+            "dose": "500 mg",
+            "frequency": "3x/j",
+            "duration": "3-7 jours"
+          },
+          {
+            "drug": "azithromycine",
+            "when": "allergie_penicilline",
+            "dose": "500 mg",
+            "frequency": "1x/j",
+            "duration": "3 jours"
+          },
+          {
+            "drug": "clarithromycine",
+            "when": "allergie_penicilline",
+            "dose": "500 mg",
+            "frequency": "2x/j",
+            "duration": "3-7 jours"
+          }
+        ]
+      }
+    },
+    {
+      "id": "R11_implant_dentaire_prophylaxie",
+      "condition": {
+        "procedure": "pose_implant_dentaire",
+        "goal": "prevention_echec_osteointegration_court_terme"
+      },
+      "recommendation": {
+        "abx_indicated": "envisageable",
+        "timing": "preop",
+        "regimens": [
+          {
+            "drug": "amoxicilline",
+            "dose": "2 g",
+            "frequency": "dose unique",
+            "timing": "1h avant"
+          },
+          {
+            "drug": "clindamycine",
+            "when": "allergie_penicilline",
+            "dose": "600 mg",
+            "frequency": "dose unique",
+            "timing": "1h avant",
+            "notes": "Risque C. difficile faible après dose unique."
+          }
+        ]
+      }
+    },
+    {
+      "id": "R12_extraction_definitive_prophylaxie",
+      "condition": {
+        "procedure": "extraction_dent_definitive"
+      },
+      "recommendation": {
+        "abx_indicated": "non",
+        "reason": "Antibioprophylaxie non recommandée."
+      }
+    },
+    {
+      "id": "R13_implant_orthopedique_prophylaxie",
+      "condition": {
+        "patient": "implant_orthopedique",
+        "procedure": "soin_dentaire"
+      },
+      "recommendation": {
+        "abx_indicated": "non",
+        "reason": "Antibioprophylaxie non recommandée."
+      }
+    },
+    {
+      "id": "R14_endocardite_haut_risque_prophylaxie_ESC",
+      "condition": {
+        "patient": "haut_risque_endocardite",
+        "procedure": "intervention_dentaire_invasive"
+      },
+      "recommendation": {
+        "abx_indicated": "envisageable",
+        "timing": "30-60 min avant",
+        "regimens_adult": [
+          {
+            "drug_in": ["amoxicilline", "ampicilline"],
+            "dose": "2 g",
+            "timing": "30-60 min avant",
+            "frequency": "dose unique"
+          },
+          {
+            "drug": "clindamycine",
+            "when": "allergie_penicilline",
+            "dose": "600 mg",
+            "timing": "30-60 min avant",
+            "frequency": "dose unique"
+          }
+        ],
+        "regimens_child": [
+          {
+            "drug_in": ["amoxicilline", "ampicilline"],
+            "dose": "50 mg/kg",
+            "timing": "30-60 min avant",
+            "frequency": "dose unique"
+          },
+          {
+            "drug": "clindamycine",
+            "when": "allergie_penicilline",
+            "dose": "20 mg/kg",
+            "timing": "30-60 min avant",
+            "frequency": "dose unique"
+          }
+        ]
+      }
+    }
+  ]
+}
