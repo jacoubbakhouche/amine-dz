@@ -33,6 +33,21 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
     const navigate = useNavigate();
     const [showHistory, setShowHistory] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]);
+    const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setUser(session?.user ?? null);
+        };
+        checkUser();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     useEffect(() => {
         if (showHistory) {
@@ -41,9 +56,7 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
     }, [showHistory]);
 
     const fetchConversations = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-
         const { data } = await supabase
             .from('conversations')
             .select('*')
@@ -51,6 +64,11 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
             .order('created_at', { ascending: false });
 
         if (data) setConversations(data);
+    };
+
+    const handleNewChat = () => {
+        navigate('/chat?new=true');
+        setShowHistory(false);
     };
 
     return (
@@ -61,17 +79,24 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
                 </div>
 
                 <div className="flex flex-col gap-6 flex-1">
-                    <SidebarItem icon={Plus} onClick={() => window.location.href = '/chat'} />
+                    <SidebarItem icon={Plus} onClick={handleNewChat} />
                     <SidebarItem icon={Search} />
-                    <SidebarItem icon={Home} active={location.pathname === '/dashboard'} onClick={() => navigate('/dashboard')} />
+                    <SidebarItem icon={Home} active={location.pathname === '/dashboard' || location.pathname === '/'} onClick={() => navigate('/')} />
                     <SidebarItem icon={Folder} />
                     <SidebarItem icon={History} active={showHistory} onClick={() => setShowHistory(!showHistory)} />
                 </div>
 
                 <div className="flex flex-col gap-6 mt-auto">
-                    <SidebarItem icon={Settings} />
-                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center border-2 border-white overflow-hidden shadow-sm cursor-pointer">
-                        <img src="https://images.unsplash.com/photo-1559839734-2b71f1536783?auto=format&fit=crop&q=80&w=200" alt="Avatar" className="w-full h-full object-cover" />
+                    <SidebarItem icon={Settings} onClick={() => navigate('/profile')} active={location.pathname === '/profile'} />
+                    <div
+                        onClick={() => navigate('/profile')}
+                        className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center border-2 border-white overflow-hidden shadow-sm cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
+                    >
+                        <img
+                            src={user?.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1559839734-2b71f1536783?auto=format&fit=crop&q=80&w=200"}
+                            alt="Avatar"
+                            className="w-full h-full object-cover"
+                        />
                     </div>
                 </div>
             </aside>

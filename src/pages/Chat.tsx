@@ -13,6 +13,7 @@ import {
 import Groq from "groq-sdk";
 import { supabase } from '../lib/supabase';
 import { findRelevance, getSystemPrompt } from '../lib/cdss';
+import { useLocation } from 'react-router-dom';
 
 const groq = new Groq({
     apiKey: import.meta.env.VITE_GROQ_API_KEY,
@@ -34,11 +35,21 @@ const PromptCard = ({ title, desc, icon: Icon, onClick }: { title: string, desc:
 );
 
 const Chat: React.FC = () => {
-    const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
+    const location = useLocation();
+    const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [conversationId, setConversationId] = useState<string | null>(null);
-    const scrollRef = useRef<HTMLDivElement>(null);
+    const [loading, setLoading] = useState(false);
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+    const chatEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('new') === 'true') {
+            setMessages([]);
+            setCurrentConversationId(null);
+            setInput('');
+        }
+    }, [location]);
 
     useEffect(() => {
         // Find existing conversation or create new one on mount
@@ -56,7 +67,7 @@ const Chat: React.FC = () => {
                 .limit(1);
 
             if (convs && convs.length > 0) {
-                setConversationId(convs[0].id);
+                setCurrentConversationId(convs[0].id);
                 // Load messages
                 const { data: msgs } = await supabase
                     .from('chat_messages')
@@ -74,13 +85,13 @@ const Chat: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollTop = chatEndRef.current.scrollHeight;
         }
     }, [messages]);
 
     const handleSendMessage = async (text: string = input) => {
-        if (!text.trim() || isLoading) return;
+        if (!text.trim() || loading) return;
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -88,10 +99,10 @@ const Chat: React.FC = () => {
             return;
         }
 
-        let currentConvId = conversationId;
+        let currId = currentConversationId;
 
         // Create conversation if it doesn't exist
-        if (!currentConvId) {
+        if (!currId) {
             const { data: newConv, error: convError } = await supabase
                 .from('conversations')
                 .insert({ user_id: user.id, title: text.slice(0, 40) + '...' })
@@ -102,13 +113,13 @@ const Chat: React.FC = () => {
                 console.error("Error creating conversation:", convError);
                 return;
             }
-            currentConvId = newConv.id;
-            setConversationId(currentConvId);
+            currId = newConv.id;
+            setCurrentConversationId(currId);
         }
 
         // Save User Message
         await supabase.from('chat_messages').insert({
-            conversation_id: currentConvId,
+            conversation_id: currId,
             role: 'user',
             content: text
         });
@@ -116,7 +127,7 @@ const Chat: React.FC = () => {
         const newMessages = [...messages, { role: 'user' as const, content: text }];
         setMessages(newMessages);
         setInput('');
-        setIsLoading(true);
+        setLoading(true);
 
         // CDSS Logic: Find relevance in JSON (Asynchronous Supabase query)
         const context = await findRelevance(text);
@@ -138,7 +149,7 @@ const Chat: React.FC = () => {
 
             // Save Assistant Message
             await supabase.from('chat_messages').insert({
-                conversation_id: currentConvId,
+                conversation_id: currId,
                 role: 'assistant',
                 content: aiResponse
             });
@@ -148,7 +159,7 @@ const Chat: React.FC = () => {
             console.error("Groq API Error:", error);
             setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please check the console." }]);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
@@ -157,7 +168,7 @@ const Chat: React.FC = () => {
             <Sidebar />
 
             <main className="flex-1 flex flex-col relative">
-                <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar px-8 py-12">
+                <div ref={chatEndRef} className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar px-8 py-12">
                     <div className="max-w-4xl mx-auto w-full">
                         <AnimatePresence>
                             {messages.length === 0 ? (
@@ -221,7 +232,7 @@ const Chat: React.FC = () => {
                                             </div>
                                         </motion.div>
                                     ))}
-                                    {isLoading && (
+                                    {loading && (
                                         <motion.div
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
@@ -275,7 +286,7 @@ const Chat: React.FC = () => {
                                 <span className="text-slate-300 text-xs font-medium">{input.length}/1000</span>
                                 <button
                                     onClick={() => handleSendMessage()}
-                                    disabled={isLoading || !input.trim()}
+                                    disabled={loading || !input.trim()}
                                     className="bg-primary-600 text-white p-3 rounded-2xl shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-all disabled:opacity-50 disabled:shadow-none"
                                 >
                                     <Send className="w-5 h-5" />

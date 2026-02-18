@@ -105,8 +105,11 @@ const Dashboard: React.FC = () => {
                                     </div>
                                 ) : user ? (
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 overflow-hidden ring-4 ring-primary-50">
+                                        <div
+                                            onClick={() => navigate('/profile')}
+                                            className="flex items-center gap-4 cursor-pointer group/user"
+                                        >
+                                            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 overflow-hidden ring-4 ring-primary-50 group-hover/user:ring-primary-100 transition-all">
                                                 <img
                                                     src={user.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200"}
                                                     alt="Avatar"
@@ -114,7 +117,7 @@ const Dashboard: React.FC = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-900">Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0]}</h4>
+                                                <h4 className="font-bold text-slate-900 group-hover/user:text-primary-600 transition-colors">Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0]}</h4>
                                                 <p className="text-xs text-slate-400">{user.email}</p>
                                             </div>
                                         </div>
@@ -150,13 +153,13 @@ const Dashboard: React.FC = () => {
                             </motion.div>
 
                             {/* Action Cards Grid */}
-                            <div className="grid md:grid-cols-3 gap-8 pt-4">
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <ActionCard
                                     icon={Stethoscope}
                                     title="Start AI Consultation"
                                     desc="Analyze symptoms with guidelines"
-                                    color="indigo"
-                                    to="/chat"
+                                    color="primary"
+                                    to="/chat?new=true"
                                 />
                                 <ActionCard
                                     icon={History}
