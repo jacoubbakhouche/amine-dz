@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
-import { Mail, Lock, Chrome, Loader2, User, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Chrome, Loader2, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Register: React.FC = () => {

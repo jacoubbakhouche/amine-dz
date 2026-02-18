@@ -1,14 +1,18 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     LogOut,
     Stethoscope,
     BookOpen,
-    History
+    History,
+    Chrome,
+    Mail,
+    ArrowRight
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import { supabase } from '../lib/supabase';
 
 const ActionCard = ({ icon: Icon, title, desc, color, to }: { icon: any, title: string, desc: string, color: string, to?: string }) => (
     <Link to={to || '#'} className="block w-full">
@@ -26,6 +30,35 @@ const ActionCard = ({ icon: Icon, title, desc, color, to }: { icon: any, title: 
 );
 
 const Dashboard: React.FC = () => {
+    const [user, setUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setUser(session?.user ?? null);
+            setLoading(false);
+        };
+
+        checkUser();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        navigate('/');
+    };
+
+    const handleGoogleLogin = async () => {
+        await supabase.auth.signInWithOAuth({ provider: 'google' });
+    };
+
     return (
         <div className="flex h-screen bg-[#F8F9FC] text-slate-900 font-sans overflow-hidden">
             <Sidebar />
@@ -65,20 +98,56 @@ const Dashboard: React.FC = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
-                                className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center justify-between max-w-lg"
+                                className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm transition-all"
                             >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 overflow-hidden">
-                                        <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200" alt="Doctor" className="w-full h-full object-cover" />
+                                {loading ? (
+                                    <div className="flex items-center justify-center p-4">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900">Welcome, yakoubbakhouche011</h4>
-                                        <p className="text-xs text-slate-400">yakoubbakhouche011@gmail.com</p>
+                                ) : user ? (
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 overflow-hidden ring-4 ring-primary-50">
+                                                <img
+                                                    src={user.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=200"}
+                                                    alt="Avatar"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900">Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0]}</h4>
+                                                <p className="text-xs text-slate-400">{user.email}</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="flex items-center gap-2 text-rose-500 font-bold text-sm hover:text-rose-600 transition-colors p-2 hover:bg-rose-50 rounded-xl"
+                                        >
+                                            <LogOut className="w-4 h-4" /> Logout
+                                        </button>
                                     </div>
-                                </div>
-                                <button className="flex items-center gap-2 text-rose-500 font-bold text-sm hover:text-rose-600 transition-colors">
-                                    <LogOut className="w-4 h-4" /> Logout
-                                </button>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="flex flex-col gap-2">
+                                            <h4 className="font-bold text-slate-900 text-xl tracking-tight">Access Medical AI Assistant</h4>
+                                            <p className="text-sm text-slate-500">Sign in to save your clinical history and personalized guidelines.</p>
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row gap-4">
+                                            <button
+                                                onClick={handleGoogleLogin}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+                                            >
+                                                <Chrome className="w-5 h-5" /> Google
+                                            </button>
+                                            <Link
+                                                to="/login"
+                                                className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white py-3 rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20"
+                                            >
+                                                Sign In <ArrowRight className="w-5 h-5" />
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
                             </motion.div>
 
                             {/* Action Cards Grid */}
