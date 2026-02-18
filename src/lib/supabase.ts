@@ -1,4 +1,4 @@
-
+// Deployment sync: Triggering build to pick up new Vercel env variables
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
