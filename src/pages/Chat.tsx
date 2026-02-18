@@ -15,14 +15,13 @@ import { supabase } from '../lib/supabase';
 import { findRelevance, getSystemPrompt } from '../lib/cdss';
 import { useLocation } from 'react-router-dom';
 
-const groqApiKey = "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";
+// استدعاء المفتاح من إعدادات Vercel مباشرة
+const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
 
 const groq = new Groq({
     apiKey: groqApiKey,
-    dangerouslyAllowBrowser: true // هادي تسمح للمتصفح يحكي مع Groq مباشرة
+    dangerouslyAllowBrowser: true 
 });
-// --- التعدي
-
 const groq = new Groq({
     apiKey: groqApiKey || 'placeholder_key',
     dangerouslyAllowBrowser: true
