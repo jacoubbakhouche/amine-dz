@@ -16,13 +16,15 @@ import { findRelevance, getSystemPrompt } from '../lib/cdss';
 import { useLocation } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 
-// استدعاء المفتاح من إعدادات Vercel مباشرة
-const groqApiKey = import.meta.env.VITE_GROQ_API_KEY;
+// --- التعديل الاحترافي لضمان المزامنة ---
+const groqApiKey = import.meta.env.VITE_GROQ_API_KEY || "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";
 
+// تعريف واحد فقط لتفادي خطأ TS2451
 const groq = new Groq({
-    apiKey: groqApiKey || 'placeholder_key',
+    apiKey: groqApiKey,
     dangerouslyAllowBrowser: true
 });
+// ---------------------------------------
 
 const PromptCard = ({ title, desc, icon: Icon, onClick }: { title: string, desc: string, icon: any, onClick: () => void }) => (
     <motion.button
