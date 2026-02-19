@@ -10,5 +10,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(
     supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseAnonKey || 'placeholder_key'
+    supabaseAnonKey || 'placeholder_key',
+    {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            // Bypass Navigator LockManager to prevent 10s timeout errors
+            // This avoids: "Acquiring an exclusive Navigator LockManager lock timed out"
+            lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => {
+                return await fn();
+            },
+        }
+    }
 );

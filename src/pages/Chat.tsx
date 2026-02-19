@@ -108,6 +108,9 @@ const Chat: React.FC = () => {
     const handleSendMessage = async (text: string = input) => {
         if (!text.trim() || loading) return;
 
+        console.log("[Chat] handleSendMessage called with:", text.slice(0, 50));
+        console.log("[Chat] user:", user?.id, "currentConversationId:", currentConversationId);
+
         if (!user) {
             alert("Please sign in to save your consultations.");
             return;
@@ -117,6 +120,7 @@ const Chat: React.FC = () => {
 
         // Create conversation if it doesn't exist
         if (!currId) {
+            console.log("[Chat] Creating new conversation...");
             const { data: newConv, error: convError } = await supabase
                 .from('conversations')
                 .insert({ user_id: user.id, title: text.slice(0, 40) + '...' })
@@ -124,9 +128,11 @@ const Chat: React.FC = () => {
                 .single();
 
             if (convError) {
-                console.error("Error creating conversation:", convError);
+                console.error("[Chat] Error creating conversation:", convError);
+                alert(`Error creating conversation: ${convError.message}`);
                 return;
             }
+            console.log("[Chat] Conversation created:", newConv.id);
             currId = newConv.id;
             setCurrentConversationId(currId);
         }
@@ -137,6 +143,7 @@ const Chat: React.FC = () => {
         setLoading(true);
 
         try {
+            console.log("[Chat] Calling Edge Function...");
             // Call Edge Function — AI + CDSS + message saving all happen server-side
             const { data, error } = await supabase.functions.invoke('chat-consultation', {
                 body: {
@@ -146,13 +153,29 @@ const Chat: React.FC = () => {
                 }
             });
 
-            if (error) throw error;
+            console.log("[Chat] Edge Function response:", { data, error });
+
+            if (error) {
+                // FunctionsHttpError: read the actual error body from the response
+                let serverError = error.message || "Unknown error";
+                try {
+                    if (error.context && typeof error.context.json === 'function') {
+                        const errorBody = await error.context.json();
+                        console.error("[Chat] Server error body:", errorBody);
+                        serverError = errorBody?.error || serverError;
+                    }
+                } catch (_) {
+                    // Couldn't parse error body
+                }
+                throw new Error(serverError);
+            }
 
             const aiResponse = data?.content || "No response generated.";
             setMessages(prev => [...prev, { role: 'assistant', content: aiResponse, isNew: true }]);
-        } catch (error) {
-            console.error("Chat Error:", error);
-            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please try again." }]);
+        } catch (error: any) {
+            console.error("[Chat] Error:", error);
+            const errorMsg = error?.message || "Unknown error";
+            setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ Error: ${errorMsg}` }]);
         } finally {
             setLoading(false);
         }

@@ -49,28 +49,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     useEffect(() => {
-        // Get initial session
-        const initAuth = async () => {
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
-            setSession(currentSession);
-            setUser(currentSession?.user ?? null);
-
-            if (currentSession?.user) {
-                await fetchProfile(currentSession.user.id);
-            }
-            setLoading(false);
-        };
-
-        initAuth();
-
-        // Listen for auth changes
+        // Use onAuthStateChange as the SINGLE source of truth
+        // It fires INITIAL_SESSION on mount, so no need for a separate getSession()
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (_event, newSession) => {
                 setSession(newSession);
                 setUser(newSession?.user ?? null);
 
                 if (newSession?.user) {
-                    await fetchProfile(newSession.user.id);
+                    try {
+                        await fetchProfile(newSession.user.id);
+                    } catch (err) {
+                        console.error('Error fetching profile:', err);
+                    }
                 } else {
                     setProfile(null);
                 }
@@ -78,7 +69,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         );
 
-        return () => subscription.unsubscribe();
+        // Safety net: if auth never resolves, stop loading after 5s
+        const timeout = setTimeout(() => setLoading(false), 5000);
+
+        return () => {
+            subscription.unsubscribe();
+            clearTimeout(timeout);
+        };
     }, []);
 
     return (
