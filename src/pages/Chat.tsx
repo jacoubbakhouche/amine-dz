@@ -10,21 +10,11 @@ import {
     ChevronDown,
     Loader2
 } from 'lucide-react';
-import Groq from "groq-sdk";
 import { supabase } from '../lib/supabase';
-import { findRelevance, getSystemPrompt } from '../lib/cdss';
 import { useLocation } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { useAuth } from '../contexts/AuthContext';
 
-// --- التعديل الاحترافي لضمان المزامنة ---
-const groqApiKey = import.meta.env.VITE_GROQ_API_KEY || "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";
-
-// تعريف واحد فقط لتفادي خطأ TS2451
-const groq = new Groq({
-    apiKey: groqApiKey,
-    dangerouslyAllowBrowser: true
-});
-// ---------------------------------------
 
 const PromptCard = ({ title, desc, icon: Icon, onClick }: { title: string, desc: string, icon: any, onClick: () => void }) => (
     <motion.button
@@ -40,8 +30,28 @@ const PromptCard = ({ title, desc, icon: Icon, onClick }: { title: string, desc:
     </motion.button>
 );
 
+const TypingText = ({ text, onComplete }: { text: string, onComplete?: () => void }) => {
+    const [displayedText, setDisplayedText] = useState("");
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    useEffect(() => {
+        if (currentIndex < text.length) {
+            const timeout = setTimeout(() => {
+                setDisplayedText(prev => prev + text[currentIndex]);
+                setCurrentIndex(prev => prev + 1);
+            }, 10);
+            return () => clearTimeout(timeout);
+        } else if (onComplete) {
+            onComplete();
+        }
+    }, [currentIndex, text, onComplete]);
+
+    return <p className="whitespace-pre-wrap text-xs md:text-sm leading-relaxed">{displayedText}</p>;
+};
+
 const Chat: React.FC = () => {
     const location = useLocation();
+    const { user } = useAuth();
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -60,7 +70,6 @@ const Chat: React.FC = () => {
     useEffect(() => {
         // Find existing conversation or create new one on mount
         const initChat = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
             // Check if we should load a specific conversation (from URL or last one)
@@ -88,7 +97,7 @@ const Chat: React.FC = () => {
         };
 
         initChat();
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         if (chatEndRef.current) {
@@ -99,7 +108,6 @@ const Chat: React.FC = () => {
     const handleSendMessage = async (text: string = input) => {
         if (!text.trim() || loading) return;
 
-        const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             alert("Please sign in to save your consultations.");
             return;
@@ -123,48 +131,28 @@ const Chat: React.FC = () => {
             setCurrentConversationId(currId);
         }
 
-        // Save User Message
-        await supabase.from('chat_messages').insert({
-            conversation_id: currId,
-            role: 'user',
-            content: text
-        });
-
         const newMessages = [...messages, { role: 'user' as const, content: text }];
         setMessages(newMessages);
         setInput('');
         setLoading(true);
 
-        // CDSS RAG Logic: Fetch clinical context locally in the frontend
-        const context = await findRelevance(text);
-        const systemPrompt = getSystemPrompt(context);
-
         try {
-            const chatCompletion = await groq.chat.completions.create({
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    ...newMessages.map(m => ({
-                        role: m.role,
-                        content: m.content,
-                    }))
-                ],
-                model: "llama-3.3-70b-versatile",
-                temperature: 0.1,
+            // Call Edge Function — AI + CDSS + message saving all happen server-side
+            const { data, error } = await supabase.functions.invoke('chat-consultation', {
+                body: {
+                    question: text,
+                    history: messages.map(m => ({ role: m.role, content: m.content })),
+                    conversationId: currId
+                }
             });
 
-            const aiResponse = chatCompletion.choices[0]?.message?.content || "No response generated.";
+            if (error) throw error;
 
-            // Save Assistant Message
-            await supabase.from('chat_messages').insert({
-                conversation_id: currId,
-                role: 'assistant',
-                content: aiResponse
-            });
-
-            setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+            const aiResponse = data?.content || "No response generated.";
+            setMessages(prev => [...prev, { role: 'assistant', content: aiResponse, isNew: true }]);
         } catch (error) {
-            console.error("Groq/CDSS Error:", error);
-            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please check your Groq API key in Vercel settings." }]);
+            console.error("Chat Error:", error);
+            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please try again." }]);
         } finally {
             setLoading(false);
         }
@@ -235,7 +223,11 @@ const Chat: React.FC = () => {
                                                 ? 'bg-primary-600 text-white shadow-lg'
                                                 : 'bg-white text-slate-800 border border-slate-100 shadow-sm'
                                                 }`}>
-                                                <p className="whitespace-pre-wrap text-xs md:text-sm leading-relaxed">{msg.content}</p>
+                                                {msg.role === 'assistant' && msg.isNew ? (
+                                                    <TypingText text={msg.content} />
+                                                ) : (
+                                                    <p className="whitespace-pre-wrap text-xs md:text-sm leading-relaxed">{msg.content}</p>
+                                                )}
                                             </div>
                                         </motion.div>
                                     ))}

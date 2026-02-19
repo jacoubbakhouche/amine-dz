@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 const SidebarItem = ({ icon: Icon, active = false, onClick }: { icon: any, active?: boolean, onClick?: () => void }) => (
     <motion.button
@@ -31,23 +32,9 @@ const SidebarItem = ({ icon: Icon, active = false, onClick }: { icon: any, activ
 const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ onSelectConversation }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { user, profile } = useAuth();
     const [showHistory, setShowHistory] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]);
-    const [user, setUser] = useState<any>(null);
-
-    useEffect(() => {
-        const checkUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setUser(session?.user ?? null);
-        };
-        checkUser();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
 
     useEffect(() => {
         if (showHistory) {
@@ -58,13 +45,6 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
     const fetchConversations = async () => {
         if (!user) return;
 
-        // Fetch profile data for the avatar
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('avatar_url, full_name')
-            .eq('id', user.id)
-            .single();
-
         const { data } = await supabase
             .from('conversations')
             .select('*')
@@ -72,16 +52,6 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
             .order('created_at', { ascending: false });
 
         if (data) setConversations(data);
-        if (profile) {
-            setUser((prev: any) => ({
-                ...prev,
-                user_metadata: {
-                    ...prev.user_metadata,
-                    avatar_url: profile.avatar_url,
-                    full_name: profile.full_name
-                }
-            }));
-        }
     };
 
     const handleNewChat = () => {
@@ -111,7 +81,7 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
                         className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center border-2 border-white overflow-hidden shadow-sm cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
                     >
                         <img
-                            src={user?.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1559839734-2b71f1536783?auto=format&fit=crop&q=80&w=200"}
+                            src={profile?.avatar_url || user?.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1559839734-2b71f1536783?auto=format&fit=crop&q=80&w=200"}
                             alt="Avatar"
                             className="w-full h-full object-cover"
                         />

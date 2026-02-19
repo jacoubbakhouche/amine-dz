@@ -13,10 +13,11 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 const EditProfile: React.FC = () => {
     const navigate = useNavigate();
-    const [user, setUser] = useState<any>(null);
+    const { user, profile, refreshProfile } = useAuth();
     const [fullName, setFullName] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
     const [loading, setLoading] = useState(true);
@@ -24,29 +25,12 @@ const EditProfile: React.FC = () => {
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (authUser) {
-                setUser(authUser);
-                // Try to fetch from profiles table first
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', authUser.id)
-                    .single();
-
-                if (profile) {
-                    setFullName(profile.full_name || authUser.user_metadata?.full_name || '');
-                    setAvatarUrl(profile.avatar_url || authUser.user_metadata?.avatar_url || '');
-                } else {
-                    setFullName(authUser.user_metadata?.full_name || '');
-                    setAvatarUrl(authUser.user_metadata?.avatar_url || '');
-                }
-            }
+        if (user) {
+            setFullName(profile?.full_name || user.user_metadata?.full_name || '');
+            setAvatarUrl(profile?.avatar_url || user.user_metadata?.avatar_url || '');
             setLoading(false);
-        };
-        fetchUserData();
-    }, []);
+        }
+    }, [user, profile]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -82,8 +66,8 @@ const EditProfile: React.FC = () => {
             setMessage({ type: 'error', text: profileError.message });
         } else {
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
-            // Soft refresh for components listening to auth state
-            await supabase.auth.refreshSession();
+            // Refresh profile in AuthContext so all components update
+            await refreshProfile();
         }
         setSaving(false);
     };
