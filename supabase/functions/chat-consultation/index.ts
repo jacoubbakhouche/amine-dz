@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -7,7 +7,6 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Helper: always return JSON with CORS
 function jsonResponse(body: Record<string, unknown>, status = 200) {
     return new Response(JSON.stringify(body), {
         status,
@@ -15,7 +14,7 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
     })
 }
 
-// --- CDSS Smart Search ---
+// --- CDSS: Clinical Data Search ---
 interface MedicalProduct {
     nom: string;
     cnk: number;
@@ -46,7 +45,6 @@ function findRelevance(query: string, clinicalRecords: { source: string; data: u
     const rules = abxContent?.rules || [];
     const principles = abxContent?.global_principles || [];
 
-    // Search dental products (ranked by keyword match count)
     const matchedProducts = products
         .map((p: MedicalProduct) => {
             const searchString = `${p.nom} ${p.nci || ''} ${p.cnk}`.toLowerCase();
@@ -60,7 +58,6 @@ function findRelevance(query: string, clinicalRecords: { source: string; data: u
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
 
-    // Search antibiotic rules
     const matchedRules = rules.filter((r: AbxRule) =>
         r.id.toLowerCase().includes(q) ||
         JSON.stringify(r.condition).toLowerCase().includes(q)
@@ -82,7 +79,6 @@ function buildSystemPrompt(context: { products: unknown[]; rules: unknown[]; pri
         contextStr += "\n[Global Principles]:\n" + context.principles.join("\n");
     }
 
-    // Graceful fallback: if no context found, use a general prompt
     if (!contextStr) {
         contextStr = "\n[No matching clinical data found for this query. Answer based on general medical knowledge but clearly state that this is not from the official database.]";
     }
@@ -114,7 +110,7 @@ serve(async (req: Request) => {
 
     try {
         // ──────────────────────────────────────────────
-        // STEP 1: Parse the request body
+        // STEP 1: Parse request body
         // ──────────────────────────────────────────────
         let question: string;
         let history: { role: string; content: string }[] = [];
@@ -125,48 +121,49 @@ serve(async (req: Request) => {
             question = body.question;
             history = body.history || [];
             conversationId = body.conversationId || null;
-            console.log("[Step 1] Body parsed OK. question:", question?.slice(0, 60), "| history:", history.length, "| convId:", conversationId);
+            console.log("[Step 1] Parsed OK. question:", question?.slice(0, 60), "| history:", history.length, "| convId:", conversationId);
         } catch (parseErr) {
-            console.error("[Step 1] FAILED to parse body:", parseErr);
+            console.error("[Step 1] Parse failed:", parseErr);
             return jsonResponse({ error: "Invalid request body" }, 400);
         }
 
         if (!question || typeof question !== 'string' || question.trim().length === 0) {
-            console.error("[Step 1] Missing or empty question");
             return jsonResponse({ error: 'Missing or invalid "question" field' }, 400);
         }
 
         // ──────────────────────────────────────────────
-        // STEP 2: Verify the user (auth)
+        // STEP 2: Verify user auth (JWT)
         // ──────────────────────────────────────────────
         const authHeader = req.headers.get('Authorization');
-        console.log("[Step 2] Auth header present:", !!authHeader);
-
         if (!authHeader) {
             console.error("[Step 2] No Authorization header");
             return jsonResponse({ error: "Missing authorization header" }, 401);
         }
 
+        // Extract the raw JWT token from "Bearer <token>"
+        const token = authHeader.replace('Bearer ', '');
+        console.log("[Step 2] Token extracted, length:", token.length);
+
         const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
         const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
-        console.log("[Step 2] Env check — URL:", supabaseUrl ? "✅" : "❌", "ANON:", supabaseAnonKey ? "✅" : "❌", "SERVICE:", serviceRoleKey ? "✅" : "❌");
+        console.log("[Step 2] Env — URL:", supabaseUrl ? "✅" : "❌", "ANON:", supabaseAnonKey ? "✅" : "❌", "SERVICE:", serviceRoleKey ? "✅" : "❌");
 
-        if (!supabaseUrl || !supabaseAnonKey) {
-            console.error("[Step 2] Missing SUPABASE_URL or SUPABASE_ANON_KEY");
-            return jsonResponse({ error: "Server misconfiguration: missing Supabase credentials" }, 500);
+        if (!supabaseUrl || !serviceRoleKey) {
+            console.error("[Step 2] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+            return jsonResponse({ error: "Server misconfiguration" }, 500);
         }
 
-        const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
-            global: { headers: { Authorization: authHeader } }
-        });
+        // Use service role client to verify the JWT token directly
+        // This avoids the "Auth session missing" issue with anon key client
+        const db = createClient(supabaseUrl, serviceRoleKey);
 
         let userId: string;
         try {
-            const { data: { user }, error: userError } = await userSupabase.auth.getUser();
+            const { data: { user }, error: userError } = await db.auth.getUser(token);
             if (userError || !user) {
-                console.error("[Step 2] Auth failed:", userError?.message || "No user found");
+                console.error("[Step 2] Auth failed:", userError?.message || "No user");
                 return jsonResponse({ error: "Unauthorized: " + (userError?.message || "Invalid token") }, 401);
             }
             userId = user.id;
@@ -176,72 +173,88 @@ serve(async (req: Request) => {
             return jsonResponse({ error: "Authentication failed" }, 401);
         }
 
+
+        // db (service role client) already created above — used for ALL DB operations
+
         // ──────────────────────────────────────────────
-        // STEP 3: Fetch clinical data (server-side, bypasses RLS)
+        // STEP 3: Create or verify conversation
         // ──────────────────────────────────────────────
-        let clinicalRecords: { source: string; data: unknown }[] = [];
+        if (!conversationId) {
+            console.log("[Step 3] No conversationId — creating new conversation...");
+            const { data: newConv, error: convError } = await db
+                .from('conversations')
+                .insert({
+                    user_id: userId,
+                    title: question.slice(0, 50) + (question.length > 50 ? '...' : '')
+                })
+                .select('id')
+                .single();
 
-        try {
-            if (serviceRoleKey) {
-                const serviceSupabase = createClient(supabaseUrl, serviceRoleKey);
-                const { data, error: clinicalError } = await serviceSupabase
-                    .from('clinical_data')
-                    .select('source, data');
-
-                if (clinicalError) {
-                    console.warn("[Step 3] Clinical data query error:", clinicalError.message);
-                    // Don't fail — continue with empty data
-                } else {
-                    clinicalRecords = data || [];
-                }
-            } else {
-                console.warn("[Step 3] No SERVICE_ROLE_KEY — trying with user client");
-                const { data, error: clinicalError } = await userSupabase
-                    .from('clinical_data')
-                    .select('source, data');
-
-                if (clinicalError) {
-                    console.warn("[Step 3] Clinical data query error (user client):", clinicalError.message);
-                } else {
-                    clinicalRecords = data || [];
-                }
+            if (convError || !newConv) {
+                console.error("[Step 3] Failed to create conversation:", convError?.message);
+                return jsonResponse({ error: "Failed to create conversation" }, 500);
             }
-            console.log("[Step 3] Clinical records fetched:", clinicalRecords.length);
-        } catch (dbErr) {
-            console.error("[Step 3] Database exception:", dbErr);
-            // Continue with empty data — don't crash
+            conversationId = newConv.id;
+            console.log("[Step 3] Conversation created:", conversationId);
+        } else {
+            // Verify the conversation belongs to this user
+            const { data: existing, error: checkErr } = await db
+                .from('conversations')
+                .select('id')
+                .eq('id', conversationId)
+                .eq('user_id', userId)
+                .single();
+
+            if (checkErr || !existing) {
+                console.error("[Step 3] Conversation not found or not owned:", checkErr?.message);
+                return jsonResponse({ error: "Conversation not found" }, 404);
+            }
+            console.log("[Step 3] Conversation verified:", conversationId);
         }
 
         // ──────────────────────────────────────────────
-        // STEP 4: Build context + system prompt
+        // STEP 4: Fetch clinical data (service role — bypasses RLS)
+        // ──────────────────────────────────────────────
+        let clinicalRecords: { source: string; data: unknown }[] = [];
+        try {
+            const { data, error: clinicalError } = await db
+                .from('clinical_data')
+                .select('source, data');
+
+            if (clinicalError) {
+                console.warn("[Step 4] Clinical data error:", clinicalError.message);
+            } else {
+                clinicalRecords = data || [];
+            }
+            console.log("[Step 4] Clinical records:", clinicalRecords.length);
+        } catch (dbErr) {
+            console.warn("[Step 4] Clinical data exception:", dbErr);
+        }
+
+        // ──────────────────────────────────────────────
+        // STEP 5: Build context + call Groq API
         // ──────────────────────────────────────────────
         const context = findRelevance(question, clinicalRecords);
         const systemPrompt = buildSystemPrompt(context);
-        console.log("[Step 4] Context built — products:", context.products.length, "| rules:", context.rules.length, "| principles:", context.principles.length);
+        console.log("[Step 5] Context — products:", context.products.length, "| rules:", context.rules.length);
 
-        // ──────────────────────────────────────────────
-        // STEP 5: Call Groq API
-        // ──────────────────────────────────────────────
         const groqApiKey = Deno.env.get('GROQ_API_KEY');
-        console.log("[Step 5] GROQ_API_KEY present:", groqApiKey ? "✅ (length: " + groqApiKey.length + ")" : "❌ MISSING");
-
         if (!groqApiKey) {
-            console.error("[Step 5] GROQ_API_KEY is not set in Supabase Secrets!");
-            return jsonResponse({ error: "AI service not configured. Please set GROQ_API_KEY in Supabase Secrets." }, 500);
+            console.error("[Step 5] GROQ_API_KEY missing!");
+            return jsonResponse({ error: "AI service not configured" }, 500);
         }
 
         const groqMessages = [
             { role: "system", content: systemPrompt },
-            ...history.slice(-10), // Keep last 10 messages to avoid token limits
+            ...history.slice(-10),
             { role: "user", content: question }
         ];
 
-        console.log("[Step 5] Calling Groq API with", groqMessages.length, "messages...");
+        console.log("[Step 5] Calling Groq with", groqMessages.length, "messages...");
 
         let aiResponse: string;
-
         try {
-            const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${groqApiKey}`,
@@ -255,55 +268,50 @@ serve(async (req: Request) => {
                 }),
             });
 
-            console.log("[Step 5] Groq response status:", groqResponse.status);
+            console.log("[Step 5] Groq status:", groqRes.status);
+            const groqData = await groqRes.json();
 
-            const groqData = await groqResponse.json();
-
-            if (!groqResponse.ok) {
-                console.error("[Step 5] Groq API error:", JSON.stringify(groqData));
-                const errMsg = groqData?.error?.message || `Groq API returned status ${groqResponse.status}`;
-                return jsonResponse({ error: "AI service error: " + errMsg }, 502);
+            if (!groqRes.ok) {
+                console.error("[Step 5] Groq error:", JSON.stringify(groqData));
+                return jsonResponse({ error: "AI service error: " + (groqData?.error?.message || groqRes.status) }, 502);
             }
 
             aiResponse = groqData?.choices?.[0]?.message?.content || "No response generated.";
-            console.log("[Step 5] Groq OK — response length:", aiResponse.length);
-
+            console.log("[Step 5] Groq OK — length:", aiResponse.length);
         } catch (groqErr) {
-            console.error("[Step 5] Groq fetch exception:", groqErr);
-            return jsonResponse({ error: "Failed to reach AI service: " + String(groqErr) }, 502);
+            console.error("[Step 5] Groq exception:", groqErr);
+            return jsonResponse({ error: "Failed to reach AI service" }, 502);
         }
 
         // ──────────────────────────────────────────────
-        // STEP 6: Save messages to database
+        // STEP 6: Save both messages (service role — bypasses RLS)
         // ──────────────────────────────────────────────
-        if (conversationId) {
-            try {
-                const { error: insertError } = await userSupabase
-                    .from('chat_messages')
-                    .insert([
-                        { conversation_id: conversationId, role: 'user', content: question },
-                        { conversation_id: conversationId, role: 'assistant', content: aiResponse }
-                    ]);
+        try {
+            const { error: insertError } = await db
+                .from('chat_messages')
+                .insert([
+                    { conversation_id: conversationId, role: 'user', content: question },
+                    { conversation_id: conversationId, role: 'assistant', content: aiResponse }
+                ]);
 
-                if (insertError) {
-                    console.warn("[Step 6] Message insert error:", insertError.message);
-                    // Don't fail the response — the AI answered, just logging failed
-                } else {
-                    console.log("[Step 6] Messages saved OK");
-                }
-            } catch (insertErr) {
-                console.warn("[Step 6] Message insert exception:", insertErr);
-                // Don't fail — AI response is more important
+            if (insertError) {
+                console.warn("[Step 6] Message save error:", insertError.message);
+                // Don't fail — AI already responded, just log the error
+            } else {
+                console.log("[Step 6] Messages saved OK");
             }
-        } else {
-            console.log("[Step 6] No conversationId — skipping message save");
+        } catch (saveErr) {
+            console.warn("[Step 6] Message save exception:", saveErr);
         }
 
         // ──────────────────────────────────────────────
-        // STEP 7: Return success
+        // STEP 7: Return success with conversationId
         // ──────────────────────────────────────────────
         console.log("=== [chat-consultation] SUCCESS ===");
-        return jsonResponse({ content: aiResponse });
+        return jsonResponse({
+            content: aiResponse,
+            conversationId: conversationId
+        });
 
     } catch (err) {
         console.error("=== [chat-consultation] UNHANDLED ERROR ===", err);

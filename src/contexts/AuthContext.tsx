@@ -10,6 +10,7 @@ interface AuthContextType {
         full_name: string | null;
         avatar_url: string | null;
         specialty: string | null;
+        date_of_birth?: string | null;
     } | null;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
@@ -26,7 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fetchProfile = async (userId: string) => {
         const { data } = await supabase
             .from('profiles')
-            .select('full_name, avatar_url, specialty')
+            .select('full_name, avatar_url, specialty, date_of_birth')
             .eq('id', userId)
             .single();
 

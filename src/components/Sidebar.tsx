@@ -62,14 +62,19 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
     return (
         <div className="hidden md:flex relative h-full">
             <aside className="w-24 border-r border-slate-100 bg-white flex flex-col items-center py-8 gap-10 h-full overflow-y-auto custom-scrollbar no-scrollbar relative z-30">
-                <div className="w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/40 cursor-pointer" onClick={() => navigate('/')}>
+                {/* Logo Icon - Redirects to Landing Page */}
+                <div
+                    className="w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/40 cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => navigate('/')}
+                    title="Page d'accueil"
+                >
                     <Activity className="text-white w-7 h-7" />
                 </div>
 
                 <div className="flex flex-col gap-6 flex-1">
                     <SidebarItem icon={Plus} onClick={handleNewChat} />
                     <SidebarItem icon={Search} />
-                    <SidebarItem icon={Home} active={location.pathname === '/dashboard' || location.pathname === '/'} onClick={() => navigate('/')} />
+                    <SidebarItem icon={Home} active={location.pathname === '/chat'} onClick={() => navigate('/chat')} />
                     <SidebarItem icon={Folder} />
                     <SidebarItem icon={History} active={showHistory} onClick={() => setShowHistory(!showHistory)} />
                 </div>

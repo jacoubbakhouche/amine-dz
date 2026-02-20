@@ -11,7 +11,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -51,29 +51,31 @@ const TypingText = ({ text, onComplete }: { text: string, onComplete?: () => voi
 
 const Chat: React.FC = () => {
     const location = useLocation();
-    const { user } = useAuth();
+    const navigate = useNavigate();
+    const { user, session, loading: authLoading } = useAuth();
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
+    // Reset state when navigating to ?new=true
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         if (params.get('new') === 'true') {
             setMessages([]);
             setCurrentConversationId(null);
             setInput('');
+            // Clean up the URL so refresh doesn't re-trigger this
+            navigate('/chat', { replace: true });
         }
-    }, [location]);
+    }, [location, navigate]);
 
+    // Load most recent conversation on mount (SELECT only — allowed by RLS)
     useEffect(() => {
-        // Find existing conversation or create new one on mount
         const initChat = async () => {
             if (!user) return;
 
-            // Check if we should load a specific conversation (from URL or last one)
-            // For now, we'll just start fresh or find the most recent
             const { data: convs } = await supabase
                 .from('conversations')
                 .select('id')
@@ -83,7 +85,7 @@ const Chat: React.FC = () => {
 
             if (convs && convs.length > 0) {
                 setCurrentConversationId(convs[0].id);
-                // Load messages
+
                 const { data: msgs } = await supabase
                     .from('chat_messages')
                     .select('role, content')
@@ -99,69 +101,75 @@ const Chat: React.FC = () => {
         initChat();
     }, [user]);
 
+    // Auto-scroll on new messages
     useEffect(() => {
         if (chatEndRef.current) {
             chatEndRef.current.scrollTop = chatEndRef.current.scrollHeight;
         }
     }, [messages]);
 
+    // ──────────────────────────────────────────────
+    // Send message: ALL data operations go through the Edge Function
+    // No direct DB inserts from the frontend
+    // ──────────────────────────────────────────────
     const handleSendMessage = async (text: string = input) => {
         if (!text.trim() || loading) return;
 
-        console.log("[Chat] handleSendMessage called with:", text.slice(0, 50));
-        console.log("[Chat] user:", user?.id, "currentConversationId:", currentConversationId);
-
-        if (!user) {
-            alert("Please sign in to save your consultations.");
+        if (!user || authLoading) {
+            alert("Veuillez vous connecter pour utiliser le chat.");
             return;
         }
 
-        let currId = currentConversationId;
+        // Use the session from AuthContext (reliable after onAuthStateChange)
+        // instead of getSession() which can return null during session restoration
+        const accessToken = session?.access_token;
 
-        // Create conversation if it doesn't exist
-        if (!currId) {
-            console.log("[Chat] Creating new conversation...");
-            const { data: newConv, error: convError } = await supabase
-                .from('conversations')
-                .insert({ user_id: user.id, title: text.slice(0, 40) + '...' })
-                .select()
-                .single();
-
-            if (convError) {
-                console.error("[Chat] Error creating conversation:", convError);
-                alert(`Error creating conversation: ${convError.message}`);
+        if (!accessToken) {
+            // Fallback: try to get session directly
+            const { data: sessionData } = await supabase.auth.getSession();
+            const fallbackToken = sessionData.session?.access_token;
+            if (!fallbackToken) {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: '⚠️ Session expirée. Veuillez vous reconnecter pour continuer.'
+                }]);
                 return;
             }
-            console.log("[Chat] Conversation created:", newConv.id);
-            currId = newConv.id;
-            setCurrentConversationId(currId);
+            // Use fallback token
+            await sendToEdgeFunction(text, fallbackToken);
+            return;
         }
 
+        await sendToEdgeFunction(text, accessToken);
+    };
+
+    const sendToEdgeFunction = async (text: string, accessToken: string) => {
+
+        // Optimistically add user message to UI
         const newMessages = [...messages, { role: 'user' as const, content: text }];
         setMessages(newMessages);
         setInput('');
         setLoading(true);
 
         try {
-            console.log("[Chat] Calling Edge Function...");
-            // Call Edge Function — AI + CDSS + message saving all happen server-side
+            // Call Edge Function — it handles EVERYTHING:
+            // conversation creation, clinical data lookup, Groq API, message saving
             const { data, error } = await supabase.functions.invoke('chat-consultation', {
                 body: {
                     question: text,
                     history: messages.map(m => ({ role: m.role, content: m.content })),
-                    conversationId: currId
+                    conversationId: currentConversationId
+                },
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
                 }
             });
 
-            console.log("[Chat] Edge Function response:", { data, error });
-
             if (error) {
-                // FunctionsHttpError: read the actual error body from the response
                 let serverError = error.message || "Unknown error";
                 try {
                     if (error.context && typeof error.context.json === 'function') {
                         const errorBody = await error.context.json();
-                        console.error("[Chat] Server error body:", errorBody);
                         serverError = errorBody?.error || serverError;
                     }
                 } catch (_) {
@@ -170,7 +178,15 @@ const Chat: React.FC = () => {
                 throw new Error(serverError);
             }
 
+            // Edge Function returns { content, conversationId }
             const aiResponse = data?.content || "No response generated.";
+            const returnedConvId = data?.conversationId;
+
+            // Store the conversationId from the server (could be newly created)
+            if (returnedConvId && !currentConversationId) {
+                setCurrentConversationId(returnedConvId);
+            }
+
             setMessages(prev => [...prev, { role: 'assistant', content: aiResponse, isNew: true }]);
         } catch (error: any) {
             console.error("[Chat] Error:", error);
@@ -180,6 +196,15 @@ const Chat: React.FC = () => {
             setLoading(false);
         }
     };
+
+    // Show loading state while auth is being restored
+    if (authLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-[#F8F9FC]">
+                <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen bg-[#F8F9FC] text-slate-900 font-sans overflow-hidden">
@@ -240,7 +265,7 @@ const Chat: React.FC = () => {
                                             key={idx}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                            className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                                         >
                                             <div className={`max-w-[90%] md:max-w-[80%] p-4 md:p-6 rounded-2xl md:rounded-3xl ${msg.role === 'user'
                                                 ? 'bg-primary-600 text-white shadow-lg'
@@ -252,6 +277,40 @@ const Chat: React.FC = () => {
                                                     <p className="whitespace-pre-wrap text-xs md:text-sm leading-relaxed">{msg.content}</p>
                                                 )}
                                             </div>
+
+                                            {/* Action Buttons for Assistant Messages */}
+                                            {msg.role === 'assistant' && (
+                                                <div className="flex gap-3 mt-2 ml-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(msg.content);
+                                                            // Simple visual feedback could be added here
+                                                        }}
+                                                        className="flex items-center gap-1.5 text-slate-400 hover:text-primary-600 transition-colors group"
+                                                        title="Copy Message"
+                                                    >
+                                                        <div className="p-1.5 rounded-md hover:bg-slate-100 transition-colors">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
+                                                        </div>
+                                                        <span className="text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity">Copy</span>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            // Add focus to input or prepopulate, for now just focus
+                                                            const textarea = document.querySelector('textarea');
+                                                            if (textarea) textarea.focus();
+                                                        }}
+                                                        className="flex items-center gap-1.5 text-slate-400 hover:text-primary-600 transition-colors group"
+                                                        title="Reply"
+                                                    >
+                                                        <div className="p-1.5 rounded-md hover:bg-slate-100 transition-colors">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square-reply"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="m9 10-3 3 3 3" /><path d="M6 13h11" /></svg>
+                                                        </div>
+                                                        <span className="text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity">Reply</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </motion.div>
                                     ))}
                                     {loading && (

@@ -38,8 +38,8 @@ const BottomNav: React.FC<{ onHistoryClick?: () => void }> = ({ onHistoryClick }
             <NavItem
                 icon={Home}
                 label="Home"
-                active={location.pathname === '/' || location.pathname === '/dashboard'}
-                onClick={() => navigate('/')}
+                active={location.pathname === '/chat'}
+                onClick={() => navigate('/chat')}
             />
             <NavItem
                 icon={MessageSquare}
