@@ -110,7 +110,8 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    @apply bg-slate-50 text-slate-900 font-sans antialiased transition-colors duration-300;
+    @apply dark:bg-slate-950 dark:text-slate-50;
 
     ::selection {
       @apply bg-primary-100 text-primary-900;
@@ -133,10 +134,12 @@
 @layer utilities {
   .glass {
     @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-glass;
+    @apply dark:bg-slate-900/70 dark:border-slate-800/20;
   }
 
   .glass-card {
     @apply bg-white/80 backdrop-blur-lg border border-white/50 shadow-glass-sm rounded-2xl;
+    @apply dark:bg-slate-900/80 dark:border-slate-800/50;
   }
 
   .text-gradient {

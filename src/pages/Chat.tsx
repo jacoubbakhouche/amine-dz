@@ -28,11 +28,11 @@ const PromptCard = ({ title, desc, icon: Icon, onClick }: { title: string, desc:
     <motion.button
         whileHover={{ y: -4, transition: { duration: 0.2 } }}
         onClick={onClick}
-        className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all text-left group h-full"
+        className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all text-left group h-full"
     >
-        <h4 className="font-bold text-slate-800 mb-2 leading-tight">{title}</h4>
-        <p className="text-[10px] text-slate-400 mb-4">{desc}</p>
-        <div className="text-slate-300 group-hover:text-primary-500 transition-colors">
+        <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-2 leading-tight">{title}</h4>
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-4">{desc}</p>
+        <div className="text-slate-300 dark:text-slate-600 group-hover:text-primary-500 transition-colors">
             <Icon className="w-5 h-5" />
         </div>
     </motion.button>
@@ -139,7 +139,7 @@ const Chat: React.FC = () => {
 
         try {
             await sendToEdgeFunction(text);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Critical handleSendMessage error:", err);
             setLoading(false);
             setStatusText('');
@@ -232,9 +232,9 @@ const Chat: React.FC = () => {
                                 >
                                     <h1 className="text-3xl md:text-5xl font-bold font-heading mb-4 text-center leading-tight">
                                         Clinical Support <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-500">Engine</span><br />
-                                        <span className="text-slate-800">Deterministic Insights</span>
+                                        <span className="text-slate-800 dark:text-white">Deterministic Insights</span>
                                     </h1>
-                                    <p className="text-slate-400 text-xs md:text-sm mb-8 md:mb-12 text-center max-w-md">Query the official dental guidelines and product databases with zero hallucination.</p>
+                                    <p className="text-slate-400 dark:text-slate-500 text-xs md:text-sm mb-8 md:mb-12 text-center max-w-md">Query the official dental guidelines and product databases with zero hallucination.</p>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full mb-8 md:mb-12">
                                         <PromptCard
@@ -263,7 +263,7 @@ const Chat: React.FC = () => {
                                         />
                                     </div>
 
-                                    <button className="flex items-center gap-2 text-slate-400 text-xs md:text-sm hover:text-slate-600 transition-colors">
+                                    <button className="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs md:text-sm hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
                                         <RefreshCw className="w-4 h-4" /> Refresh Prompts
                                     </button>
                                 </motion.div>
@@ -298,7 +298,7 @@ const Chat: React.FC = () => {
                                                         className="flex items-center gap-1.5 text-slate-400 hover:text-primary-600 transition-colors group"
                                                         title="Copy Message"
                                                     >
-                                                        <div className="p-1.5 rounded-md hover:bg-slate-100 transition-colors">
+                                                        <div className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
                                                         </div>
                                                         <span className="text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity">Copy</span>
@@ -313,7 +313,7 @@ const Chat: React.FC = () => {
                                                         className="flex items-center gap-1.5 text-slate-400 hover:text-primary-600 transition-colors group"
                                                         title="Reply"
                                                     >
-                                                        <div className="p-1.5 rounded-md hover:bg-slate-100 transition-colors">
+                                                        <div className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square-reply"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="m9 10-3 3 3 3" /><path d="M6 13h11" /></svg>
                                                         </div>
                                                         <span className="text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity">Reply</span>
@@ -346,13 +346,13 @@ const Chat: React.FC = () => {
                 <div className="max-w-4xl mx-auto w-full px-4 md:px-8 pb-4 md:pb-8">
                     <div className="bg-white dark:bg-slate-900 rounded-[24px] md:rounded-[32px] p-4 md:p-6 shadow-xl border border-slate-100 dark:border-slate-800 transition-colors">
                         <div className="flex items-center justify-between mb-2 px-1 md:px-2">
-                            <button className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-slate-500 bg-slate-50 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors">
+                            <button className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full border border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                                 <Globe className="w-3 md:w-3.5 h-3 md:h-3.5" /> All Web <ChevronDown className="w-3 md:w-3.5 h-3 md:h-3.5" />
                             </button>
                         </div>
 
                         <textarea
-                            className="w-full bg-transparent border-none focus:ring-0 text-slate-700 placeholder:text-slate-400 text-sm md:text-lg resize-none px-1 md:px-2 min-h-[40px] md:min-h-[60px]"
+                            className="w-full bg-transparent border-none focus:ring-0 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm md:text-lg resize-none px-1 md:px-2 min-h-[40px] md:min-h-[60px]"
                             placeholder="Ask whatever you want...."
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
@@ -365,17 +365,17 @@ const Chat: React.FC = () => {
                         />
 
                         <div className="flex items-center gap-3 md:gap-4 px-1 md:px-2 pt-3 md:pt-4 border-t border-slate-50">
-                            <button className="flex items-center gap-1.5 text-slate-500 text-xs md:text-sm hover:text-primary-600 transition-colors">
+                            <button className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs md:text-sm hover:text-primary-600 transition-colors">
                                 <Plus className="w-4 md:w-5 h-4 md:h-5" /> <span className="hidden sm:inline">Add Attachment</span>
                             </button>
-                            <button className="flex items-center gap-1.5 text-slate-500 text-xs md:text-sm hover:text-primary-600 transition-colors">
+                            <button className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs md:text-sm hover:text-primary-600 transition-colors">
                                 <ImageIcon className="w-4 md:w-5 h-4 md:h-5" /> <span className="hidden sm:inline">Use Image</span>
                             </button>
 
                             <div className="flex-1" />
 
                             <div className="flex items-center gap-2 md:gap-4">
-                                <span className="hidden xs:inline text-slate-300 text-[10px] md:text-xs font-medium">{input.length}/1000</span>
+                                <span className="hidden xs:inline text-slate-300 dark:text-slate-600 text-[10px] md:text-xs font-medium">{input.length}/1000</span>
                                 <button
                                     onClick={() => handleSendMessage()}
                                     disabled={loading || !input.trim()}

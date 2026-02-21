@@ -23,7 +23,7 @@ const SidebarItem = ({ icon: Icon, active = false, onClick }: { icon: any, activ
         onClick={onClick}
         className={`p-4 rounded-2xl flex items-center justify-center transition-all ${active
             ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800'
             }`}
     >
         <Icon className="w-6 h-6" />
@@ -85,7 +85,7 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
                     <SidebarItem icon={Settings} onClick={() => navigate('/profile')} active={location.pathname === '/profile'} />
                     <div
                         onClick={() => navigate('/profile')}
-                        className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center border-2 border-white overflow-hidden shadow-sm cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
+                        className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center border-2 border-white dark:border-slate-800 overflow-hidden shadow-sm cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all"
                     >
                         <img
                             src={profile?.avatar_url || user?.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1559839734-2b71f1536783?auto=format&fit=crop&q=80&w=200"}

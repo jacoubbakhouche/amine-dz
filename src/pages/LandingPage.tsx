@@ -57,12 +57,12 @@ const FeatureCard = ({ icon: Icon, title, description, color, delay }: {
         className="relative group"
     >
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative bg-white/80 backdrop-blur-lg p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500">
-            <div className={`w-14 h-14 rounded-2xl bg-${color}-50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                <Icon className={`w-7 h-7 text-${color}-500`} />
+        <div className="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-500">
+            <div className={`w-14 h-14 rounded-2xl bg-${color}-50 dark:bg-${color}-900/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                <Icon className={`w-7 h-7 text-${color}-500 dark:text-${color}-400`} />
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-3 font-heading">{title}</h3>
-            <p className="text-slate-500 leading-relaxed text-sm">{description}</p>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 font-heading">{title}</h3>
+            <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-sm">{description}</p>
         </div>
     </motion.div>
 );
@@ -75,12 +75,12 @@ const TrustItem = ({ icon: Icon, title, description }: { icon: any; title: strin
         viewport={{ once: true }}
         className="flex gap-5 items-start"
     >
-        <div className="w-12 h-12 rounded-2xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
-            <Icon className="w-6 h-6 text-primary-500" />
+        <div className="w-12 h-12 rounded-2xl bg-primary-500/10 dark:bg-primary-500/20 flex items-center justify-center flex-shrink-0">
+            <Icon className="w-6 h-6 text-primary-500 dark:text-primary-400" />
         </div>
         <div>
-            <h4 className="font-bold text-slate-900 mb-1">{title}</h4>
-            <p className="text-slate-500 text-sm leading-relaxed">{description}</p>
+            <h4 className="font-bold text-slate-900 dark:text-white mb-1">{title}</h4>
+            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{description}</p>
         </div>
     </motion.div>
 );
@@ -170,22 +170,22 @@ const LandingPage: React.FC = () => {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.8 }}
                         >
-                            <div className="inline-flex items-center gap-2 bg-primary-50 border border-primary-100 rounded-full px-4 py-1.5 mb-8">
-                                <Sparkles className="w-4 h-4 text-primary-500" />
-                                <span className="text-xs font-bold text-primary-600 uppercase tracking-wider">Intelligence Clinique B2B</span>
+                            <div className="inline-flex items-center gap-2 bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-800 rounded-full px-4 py-1.5 mb-8">
+                                <Sparkles className="w-4 h-4 text-primary-500 dark:text-primary-400" />
+                                <span className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">Intelligence Clinique B2B</span>
                             </div>
 
-                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.1] mb-6 font-heading">
+                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white leading-[1.1] mb-6 font-heading">
                                 L'Assistance Décisionnelle{' '}
                                 <span className="text-gradient">Intelligente</span>{' '}
                                 pour Experts de Santé.
                             </h1>
 
-                            <p className="text-lg md:text-xl text-slate-500 leading-relaxed mb-10 max-w-lg">
+                            <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 leading-relaxed mb-10 max-w-lg">
                                 Accédez à des données médicales structurées et déterministes. Une solution SaaS sécurisée pour{' '}
-                                <strong className="text-slate-700">pharmaciens</strong>,{' '}
-                                <strong className="text-slate-700">dentistes</strong> et{' '}
-                                <strong className="text-slate-700">vétérinaires</strong>.
+                                <strong className="text-slate-700 dark:text-slate-200">pharmaciens</strong>,{' '}
+                                <strong className="text-slate-700 dark:text-slate-200">dentistes</strong> et{' '}
+                                <strong className="text-slate-700 dark:text-slate-200">vétérinaires</strong>.
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-4">
@@ -198,7 +198,7 @@ const LandingPage: React.FC = () => {
                                 </button>
                                 <a
                                     href="#demo"
-                                    className="group bg-white text-slate-700 font-bold px-8 py-4 rounded-2xl border border-slate-200 hover:border-primary-300 hover:text-primary-600 transition-all flex items-center justify-center gap-3 shadow-sm"
+                                    className="group bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 font-bold px-8 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400 transition-all flex items-center justify-center gap-3 shadow-sm"
                                 >
                                     Voir la démo
                                     <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -218,8 +218,8 @@ const LandingPage: React.FC = () => {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.5 + i * 0.15 }}
                                     >
-                                        <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-                                        <p className="text-xs font-medium text-slate-400 mt-1">{stat.label}</p>
+                                        <p className="text-2xl font-black text-slate-900 dark:text-white">{stat.value}</p>
+                                        <p className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1">{stat.label}</p>
                                     </motion.div>
                                 ))}
                             </div>
@@ -242,18 +242,18 @@ const LandingPage: React.FC = () => {
                             <motion.div
                                 animate={{ y: [0, -10, 0] }}
                                 transition={{ duration: 3, repeat: Infinity }}
-                                className="absolute top-8 right-4 bg-white shadow-xl rounded-2xl px-4 py-3 flex items-center gap-2 z-20"
+                                className="absolute top-8 right-4 bg-white dark:bg-slate-900 shadow-xl rounded-2xl px-4 py-3 flex items-center gap-2 z-20"
                             >
                                 <CheckCircle2 className="w-5 h-5 text-green-500" />
-                                <span className="text-xs font-bold text-slate-700">Données Vérifiées</span>
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Données Vérifiées</span>
                             </motion.div>
                             <motion.div
                                 animate={{ y: [0, 8, 0] }}
                                 transition={{ duration: 3.5, repeat: Infinity }}
-                                className="absolute bottom-12 left-0 bg-white shadow-xl rounded-2xl px-4 py-3 flex items-center gap-2 z-20"
+                                className="absolute bottom-12 left-0 bg-white dark:bg-slate-900 shadow-xl rounded-2xl px-4 py-3 flex items-center gap-2 z-20"
                             >
                                 <Shield className="w-5 h-5 text-primary-500" />
-                                <span className="text-xs font-bold text-slate-700">Conforme RGPD</span>
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Conforme RGPD</span>
                             </motion.div>
                         </motion.div>
                     </div>
@@ -271,14 +271,14 @@ const LandingPage: React.FC = () => {
                         viewport={{ once: true }}
                         className="text-center mb-16"
                     >
-                        <div className="inline-flex items-center gap-2 bg-primary-50 border border-primary-100 rounded-full px-4 py-1.5 mb-6">
+                        <div className="inline-flex items-center gap-2 bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-800 rounded-full px-4 py-1.5 mb-6">
                             <MessageSquare className="w-4 h-4 text-primary-500" />
-                            <span className="text-xs font-bold text-primary-600 uppercase tracking-wider">Démonstration Live</span>
+                            <span className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">Démonstration Live</span>
                         </div>
-                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 font-heading mb-4">
+                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white font-heading mb-4">
                             Moteur de Recherche Clinique <span className="text-gradient">Intelligent</span>
                         </h2>
-                        <p className="text-slate-500 max-w-2xl mx-auto">
+                        <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
                             Logique déterministe — pas d'IA générative pure. Chaque réponse est tracée et justifiée par nos bases de données propriétaires.
                         </p>
                     </motion.div>
@@ -290,15 +290,15 @@ const LandingPage: React.FC = () => {
                         viewport={{ once: true }}
                         className="max-w-3xl mx-auto"
                     >
-                        <div className="bg-white rounded-[2rem] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
+                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl shadow-slate-200/60 dark:shadow-slate-950/60 border border-slate-100 dark:border-slate-800 overflow-hidden">
                             {/* Chat header */}
-                            <div className="bg-slate-900 px-6 py-4 flex items-center gap-3">
+                            <div className="bg-slate-900 dark:bg-black px-6 py-4 flex items-center gap-3">
                                 <div className="flex gap-2">
                                     <div className="w-3 h-3 rounded-full bg-red-400" />
                                     <div className="w-3 h-3 rounded-full bg-yellow-400" />
                                     <div className="w-3 h-3 rounded-full bg-green-400" />
                                 </div>
-                                <span className="text-white/60 text-xs font-medium ml-2">Pharmasssit CDSS — Consultation</span>
+                                <span className="text-white/60 dark:text-white/40 text-xs font-medium ml-2">Pharmasssit CDSS — Consultation</span>
                             </div>
 
                             {/* Chat body */}
@@ -327,12 +327,12 @@ const LandingPage: React.FC = () => {
                                     transition={{ delay: 0.5 }}
                                     className="flex justify-start"
                                 >
-                                    <div className="bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-sm px-5 py-4 max-w-lg">
+                                    <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl rounded-tl-sm px-5 py-4 max-w-lg">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Bot className="w-4 h-4 text-primary-500" />
                                             <span className="text-[10px] font-bold text-primary-600 uppercase">CDSS Assistant</span>
                                         </div>
-                                        <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans leading-relaxed">
+                                        <pre className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-sans leading-relaxed">
                                             {demoAnswer}
                                             <span className="animate-pulse text-primary-500">|</span>
                                         </pre>
@@ -341,8 +341,8 @@ const LandingPage: React.FC = () => {
                             </div>
 
                             {/* Chat input mock */}
-                            <div className="border-t border-slate-100 px-6 py-4 flex items-center gap-3">
-                                <div className="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm text-slate-400 border border-slate-100">
+                            <div className="border-t border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center gap-3">
+                                <div className="flex-1 bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 dark:text-slate-500 border border-slate-100 dark:border-slate-700">
                                     Posez votre question clinique...
                                 </div>
                                 <div className="bg-primary-600 p-3 rounded-xl shadow-lg shadow-primary-500/25">
@@ -353,9 +353,9 @@ const LandingPage: React.FC = () => {
 
                         {/* Tag underneath */}
                         <div className="flex justify-center mt-6">
-                            <div className="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-4 py-2">
+                            <div className="inline-flex items-center gap-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-full px-4 py-2">
                                 <Sparkles className="w-4 h-4 text-amber-500" />
-                                <span className="text-xs font-bold text-amber-700">Logique déterministe — Zéro hallucination — Données tracées</span>
+                                <span className="text-xs font-bold text-amber-700 dark:text-amber-400">Logique déترminisت — Zéro hallucination — Données tracées</span>
                             </div>
                         </div>
                     </motion.div>
@@ -373,10 +373,10 @@ const LandingPage: React.FC = () => {
                         viewport={{ once: true }}
                         className="text-center mb-16"
                     >
-                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 font-heading mb-4">
+                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white font-heading mb-4">
                             Fonctionnalités <span className="text-gradient">Clés</span>
                         </h2>
-                        <p className="text-slate-500 max-w-xl mx-auto">
+                        <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
                             Une plateforme conçue pour les professionnels de santé exigeants.
                         </p>
                     </motion.div>
@@ -457,10 +457,10 @@ const LandingPage: React.FC = () => {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                             >
-                                <h2 className="text-3xl md:text-4xl font-black text-slate-900 font-heading mb-4">
+                                <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white font-heading mb-4">
                                     Pourquoi Choisir <span className="text-gradient">Pharmasssit</span> ?
                                 </h2>
-                                <p className="text-slate-500 mb-8">
+                                <p className="text-slate-500 dark:text-slate-400 mb-8">
                                     Une solution pensée par des professionnels, pour des professionnels.
                                 </p>
                             </motion.div>
