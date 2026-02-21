@@ -171,7 +171,11 @@ const Chat: React.FC = () => {
 
             // 3. Fast Edge Function Call
             setStatusText("Consulting Medical AI...");
+            const { data: sessionData } = await supabase.auth.getSession();
             const { data, error } = await supabase.functions.invoke('chat-consultation', {
+                headers: {
+                    Authorization: `Bearer ${sessionData.session?.access_token || ''}`
+                },
                 body: {
                     question: text,
                     queryVector,
@@ -181,6 +185,7 @@ const Chat: React.FC = () => {
             });
 
             if (error) throw error;
+            if (data?.error && !data?.content) throw new Error(data.error);
 
             // 4. Success
             const aiResponse = data?.content || "عذراً، لم أتمكن من الحصول على إجابة.";
