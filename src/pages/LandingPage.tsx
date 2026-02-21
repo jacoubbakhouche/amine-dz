@@ -263,7 +263,7 @@ const LandingPage: React.FC = () => {
             {/* ═══════════════════════════════════════════ */}
             {/* AI DEMO SECTION                             */}
             {/* ═══════════════════════════════════════════ */}
-            <section id="demo" className="py-20 md:py-32 bg-gradient-to-b from-white to-slate-50">
+            <section id="demo" className="py-20 md:py-32 bg-gradient-to-b from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 transition-colors">
                 <div className="max-w-7xl mx-auto px-6">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -410,7 +410,7 @@ const LandingPage: React.FC = () => {
             {/* ═══════════════════════════════════════════ */}
             {/* TRUST / CONFIDENCE SECTION                  */}
             {/* ═══════════════════════════════════════════ */}
-            <section id="confiance" className="py-20 md:py-32 bg-gradient-to-b from-slate-50 to-white">
+            <section id="confiance" className="py-20 md:py-32 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 transition-colors">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                         {/* Left: Image / gradient card */}
