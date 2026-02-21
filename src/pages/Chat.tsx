@@ -10,7 +10,7 @@ import {
     ChevronDown,
     Loader2
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../contexts/AuthContext';
@@ -154,15 +154,30 @@ const Chat: React.FC = () => {
         setStatusText("Preparing AI...");
 
         try {
-            // 2. Vectorization (Local & Free)
-            if (!embeddingPipeline) {
-                setStatusText("Waking up AI model...");
-                embeddingPipeline = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
-            }
+            // 2. Vectorization (Local & Free) with Timeout Fallback
+            let queryVector = Array(384).fill(0); // Default fallback vector
+            try {
+                if (!embeddingPipeline) {
+                    setStatusText("Waking up AI model...");
+                    // Add timeout to pipeline load
+                    embeddingPipeline = await Promise.race([
+                        pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2'),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Model load timeout')), 5000))
+                    ]);
+                }
 
-            setStatusText("Analyzing question...");
-            const output = await embeddingPipeline(text, { pooling: 'mean', normalize: true });
-            const queryVector = Array.from(output.data);
+                setStatusText("Analyzing question...");
+                // Add timeout to embedding generation
+                const output = await Promise.race([
+                    embeddingPipeline(text, { pooling: 'mean', normalize: true }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Embedding generation timeout')), 3000))
+                ]) as any;
+
+                queryVector = Array.from(output.data);
+            } catch (e) {
+                console.warn("Local embedding failed or timed out, using fallback vector.", e);
+                // We proceed with the zero vector. The SQL will still match based on `query_text` (keyword match)
+            }
 
             // 3. Fast Edge Function Call
             setStatusText("Consulting Medical AI...");
@@ -176,17 +191,26 @@ const Chat: React.FC = () => {
             } catch (e) {
                 console.warn("Auth refresh skipped, continuing without token.");
             }
-            const { data, error } = await supabase.functions.invoke('chat-consultation', {
-                headers: authHeaders,
-                body: {
+            const response = await fetch(`${supabaseUrl}/functions/v1/chat-consultation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseAnonKey,
+                    ...authHeaders
+                },
+                body: JSON.stringify({
                     question: text,
                     queryVector,
                     history: messages.slice(-4).map(m => ({ role: m.role, content: m.content })),
                     conversationId: currentConversationId
-                }
+                })
             });
 
-            if (error) throw error;
+            if (!response.ok) {
+                throw new Error(`Connection error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
             if (data?.error && !data?.content) throw new Error(data.error);
 
             // 4. Success

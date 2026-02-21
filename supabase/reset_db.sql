@@ -1,50 +1,43 @@
--- 1. DROP EXISTING STRUCTURES
+-- ====================================================================
+-- FULL DATABASE RESET FOR PHARMASSSIT CLINICAL SEARCH
+-- Run this in Supabase Dashboard -> SQL Editor
+-- ====================================================================
+
+-- 1. DROP EVERYTHING (Force clean slate)
 DROP FUNCTION IF EXISTS match_clinical_data CASCADE;
 DROP TABLE IF EXISTS clinical_embeddings CASCADE;
-DROP TABLE IF EXISTS chat_messages CASCADE;
-DROP TABLE IF EXISTS conversations CASCADE;
 
--- 2. ENABLE EXTENSIONS
+-- 2. RECREATE EXTENSION
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- 3. RECREATE TABLES (Clean Slate)
-CREATE TABLE conversations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) NOT NULL,
-  title TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE TABLE chat_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) NOT NULL,
-  role TEXT CHECK (role IN ('user', 'assistant')),
-  content TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
+-- 3. RECREATE TABLE
 CREATE TABLE clinical_embeddings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  source TEXT NOT NULL,
-  content TEXT NOT NULL,
-  metadata JSONB,
-  embedding VECTOR(384),
-  created_at TIMESTAMPTZ DEFAULT now()
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  source text NOT NULL,
+  content text NOT NULL,
+  metadata jsonb,
+  embedding vector(384),
+  created_at timestamp with time zone DEFAULT now()
 );
 
--- 4. RECREATE SEARCH FUNCTION
+-- 4. CREATE INDEX FOR TEXT SEARCH
+CREATE INDEX clinical_embeddings_content_idx ON clinical_embeddings USING gin (to_tsvector('simple', content));
+
+-- 5. RECREATE FUNCTION WITH RLS BYPASS (SECURITY DEFINER) & 5 PARAMS
 CREATE OR REPLACE FUNCTION match_clinical_data (
-  query_embedding VECTOR(384),
-  match_threshold FLOAT,
-  match_count INT
+  query_embedding vector(384),
+  query_text text,
+  match_threshold float,
+  match_count int,
+  p_source text DEFAULT NULL
 )
 RETURNS TABLE (
-  id UUID,
-  source TEXT,
-  content TEXT,
-  metadata JSONB,
-  similarity FLOAT
+  id uuid,
+  source text,
+  content text,
+  metadata jsonb,
+  similarity float,
+  text_rank float
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -52,28 +45,22 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT
-    clinical_embeddings.id,
-    clinical_embeddings.source,
-    clinical_embeddings.content,
-    clinical_embeddings.metadata,
-    1 - (clinical_embeddings.embedding <=> query_embedding) AS similarity
-  FROM clinical_embeddings
-  WHERE 1 - (clinical_embeddings.embedding <=> query_embedding) > match_threshold
-  ORDER BY clinical_embeddings.embedding <=> query_embedding
+    ce.id, ce.source, ce.content, ce.metadata,
+    1 - (ce.embedding <=> query_embedding) AS similarity,
+    ts_rank_cd(to_tsvector('simple', ce.content), websearch_to_tsquery('simple', query_text)) AS text_rank
+  FROM clinical_embeddings ce
+  WHERE (p_source IS NULL OR ce.source = p_source)
+    AND (
+      (1 - (ce.embedding <=> query_embedding) > match_threshold)
+      OR 
+      (to_tsvector('simple', ce.content) @@ websearch_to_tsquery('simple', query_text))
+    )
+  ORDER BY 
+    (ts_rank_cd(to_tsvector('simple', ce.content), websearch_to_tsquery('simple', query_text)) * 3.0) + 
+    (1 - (ce.embedding <=> query_embedding)) DESC
   LIMIT match_count;
 END;
 $$;
 
--- 5. ENABLE RLS AND POLICIES
-ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE clinical_embeddings ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage their own conversations" 
-ON conversations FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can manage their own messages" 
-ON chat_messages FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Anyone authenticated can read clinical data" 
-ON clinical_embeddings FOR SELECT TO authenticated USING (true);
+-- 6. DISABLE RLS FOR TESTING (Table will be publicly readable/writable)
+ALTER TABLE clinical_embeddings DISABLE ROW LEVEL SECURITY;
