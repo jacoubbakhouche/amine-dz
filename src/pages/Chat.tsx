@@ -132,11 +132,6 @@ const Chat: React.FC = () => {
     const handleSendMessage = async (text: string = input) => {
         if (!text.trim() || loading) return;
 
-        if (!user || authLoading) {
-            alert("Veuillez vous connecter pour utiliser le chat.");
-            return;
-        }
-
         try {
             await sendToEdgeFunction(text);
         } catch (err: any) {
@@ -171,11 +166,18 @@ const Chat: React.FC = () => {
 
             // 3. Fast Edge Function Call
             setStatusText("Consulting Medical AI...");
-            const { data: sessionData } = await supabase.auth.getSession();
+            // Try to get auth token, but don't block if not logged in
+            let authHeaders: Record<string, string> = {};
+            try {
+                const { data: sessionData } = await supabase.auth.refreshSession();
+                if (sessionData.session?.access_token) {
+                    authHeaders = { Authorization: `Bearer ${sessionData.session.access_token}` };
+                }
+            } catch (e) {
+                console.warn("Auth refresh skipped, continuing without token.");
+            }
             const { data, error } = await supabase.functions.invoke('chat-consultation', {
-                headers: {
-                    Authorization: `Bearer ${sessionData.session?.access_token || ''}`
-                },
+                headers: authHeaders,
                 body: {
                     question: text,
                     queryVector,

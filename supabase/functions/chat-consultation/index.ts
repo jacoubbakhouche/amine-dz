@@ -74,32 +74,49 @@ Deno.serve(async (req) => {
                 query_embedding: queryVector,
                 query_text: optimizedQuery,
                 match_threshold: 0.1,
-                match_count: 5
+                match_count: 5,
+                p_source: null
             });
             if (!rpcError && results) {
                 context = results.map((r: any) => `[Source: ${r.source}] ${r.content}`).join("\n---\n");
             }
         } catch (e) { console.error("Search Error (Ignored):", e.message); }
 
-        // --- 3. AI Completion ---
-        const systemPrompt = `أنت مساعد طبي خبير. أجب بناءً على السياق المسترجع.
-إذا لم تجد المعلومة، اقترح بدائل مهنية من السياق أو اعتذر بلباقة.
+        // --- 3. AI Completion with Timeout ---
+        console.log("Preparing AI prompt...");
+        const systemPrompt = `أنت مساعد طبي وصيدلاني دقيق للغاية. تعمل في "الوضع السريري الآمن".
+قاعدتك الذهبية: يجب أن تستخرج الإجابات، والجرعات، والتركيزات حصرياً وبشكل حرفي من "السياق المسترجع" أدناه.
+- يمنع منعاً باتاً استخدام معلوماتك العامة أو بيانات التدريب الخاصة بك.
+- يمنع منعاً باتاً استنتاج جرعات مضادات حيوية أو تركيزات صيدلانية غير موجودة بوضوح في السياق.
+- إذا كان السؤال عن منتج، تركيز، أو جرعة غير متوفرة صراحةً في السياق، يجب أن ترد قائلاً: "عذراً، هذا المنتج أو هذه الجرعة غير مدرجة في قاعدة البيانات السريرية الآمنة المعتمدة لدينا." ولا تقترح أي شيء من خارج السياق.
+
 السياق المسترجع:
 ${context || "لا توجد بيانات مباشرة متوفرة حالياً."}`;
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+        console.log("Calling Groq API...");
         const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: { "Authorization": `Bearer ${groqKey}`, "Content-Type": "application/json" },
+            signal: controller.signal,
             body: JSON.stringify({
                 messages: [{ role: "system", content: systemPrompt }, ...history.slice(-3), { role: "user", content: question }],
                 model: "llama-3.3-70b-versatile",
                 temperature: 0.1,
             }),
-        });
+        }).finally(() => clearTimeout(timeoutId));
 
-        if (!groqRes.ok) throw new Error("AI Service temporary unavailable.");
+        if (!groqRes.ok) {
+            console.error("Groq API Error Status:", groqRes.status);
+            throw new Error("AI Service temporary unavailable.");
+        }
+
+        console.log("Parsing Groq Response...");
         const groqData = await groqRes.json();
         const aiContent = groqData.choices?.[0]?.message?.content || "No response.";
+        console.log("AI Response Received.");
 
         // --- 4. Final Save (Non-blocking) ---
         if (activeConvId) {
