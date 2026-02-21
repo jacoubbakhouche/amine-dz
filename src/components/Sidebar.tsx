@@ -14,6 +14,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import ThemeToggle from '../components/ThemeToggle';
 
 const SidebarItem = ({ icon: Icon, active = false, onClick }: { icon: any, active?: boolean, onClick?: () => void }) => (
     <motion.button
@@ -61,7 +62,7 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
 
     return (
         <div className="hidden md:flex relative h-full">
-            <aside className="w-24 border-r border-slate-100 bg-white flex flex-col items-center py-8 gap-10 h-full overflow-y-auto custom-scrollbar no-scrollbar relative z-30">
+            <aside className="w-24 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col items-center py-8 gap-10 h-full overflow-y-auto custom-scrollbar no-scrollbar relative z-30 transition-colors">
                 {/* Logo Icon - Redirects to Landing Page */}
                 <div
                     className="w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/40 cursor-pointer hover:scale-105 transition-transform"
@@ -80,6 +81,7 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
                 </div>
 
                 <div className="flex flex-col gap-6 mt-auto">
+                    <ThemeToggle />
                     <SidebarItem icon={Settings} onClick={() => navigate('/profile')} active={location.pathname === '/profile'} />
                     <div
                         onClick={() => navigate('/profile')}
@@ -101,7 +103,7 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
                         initial={{ x: -100, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: -100, opacity: 0 }}
-                        className="w-64 border-r border-slate-100 bg-white h-full overflow-y-auto py-8 px-4 flex flex-col gap-4 shadow-sm relative z-20"
+                        className="w-64 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 h-full overflow-y-auto py-8 px-4 flex flex-col gap-4 shadow-sm relative z-20 transition-colors"
                     >
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">History</h3>
                         <div className="flex flex-col gap-2">
@@ -112,11 +114,11 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
                                         onSelectConversation?.(conv.id);
                                         setShowHistory(false);
                                     }}
-                                    className="flex flex-col gap-1 p-3 rounded-xl hover:bg-slate-50 transition-all text-left group"
+                                    className="flex flex-col gap-1 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-left group"
                                 >
                                     <div className="flex items-center gap-2">
                                         <MessageSquare className="w-3.5 h-3.5 text-primary-500" />
-                                        <span className="text-sm font-bold text-slate-700 truncate">{conv.title}</span>
+                                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{conv.title}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5 ml-5">
                                         <Clock className="w-3 h-3 text-slate-300" />

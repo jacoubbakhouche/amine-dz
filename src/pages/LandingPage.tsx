@@ -20,6 +20,8 @@ import {
     Globe
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { DottedSurface } from '../components/ui/dotted-surface';
+import ThemeToggle from '../components/ThemeToggle';
 
 // --- Animated typing effect for the demo ---
 const useTypingEffect = (text: string, speed = 30, startDelay = 1000) => {
@@ -97,7 +99,8 @@ const LandingPage: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] font-sans overflow-x-hidden">
+        <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors overflow-x-hidden">
+            <DottedSurface className="opacity-70" />
 
             {/* ═══════════════════════════════════════════ */}
             {/* NAVIGATION BAR                              */}
@@ -105,34 +108,37 @@ const LandingPage: React.FC = () => {
             <motion.nav
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100/50"
+                className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-100/50 dark:border-slate-800/50 transition-colors"
             >
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => navigate('/')}>
                         <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30 group-hover:scale-110 transition-transform">
                             <Plus className="text-white w-6 h-6 stroke-[3]" />
                         </div>
-                        <span className="text-xl font-black tracking-tight text-slate-900 font-heading">Pharmasssit</span>
+                        <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white font-heading">Pharmasssit</span>
                     </div>
-                    <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
-                        <a href="#fonctionnalites" className="hover:text-primary-600 transition-colors">Fonctionnalités</a>
-                        <a href="#demo" className="hover:text-primary-600 transition-colors">Démonstration</a>
-                        <a href="#confiance" className="hover:text-primary-600 transition-colors">Sécurité</a>
+                    <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500 dark:text-slate-400">
+                        <a href="#fonctionnalites" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Fonctionnalités</a>
+                        <a href="#demo" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Démonstration</a>
+                        <a href="#confiance" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Sécurité</a>
                     </div>
                     <div className="flex items-center gap-3">
                         {user ? (
-                            <button
-                                onClick={() => navigate('/chat')}
-                                className="bg-primary-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 shadow-lg shadow-primary-500/25 transition-all hover:shadow-xl hover:shadow-primary-500/30 flex items-center gap-2"
-                            >
-                                Accéder à l'Assistant
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-4">
+                                <ThemeToggle />
+                                <button
+                                    onClick={() => navigate('/chat')}
+                                    className="bg-primary-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-primary-700 shadow-lg shadow-primary-500/25 transition-all hover:shadow-xl hover:shadow-primary-500/30 flex items-center gap-2"
+                                >
+                                    Accéder à l'Assistant
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
                         ) : (
-                            <>
+                            <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => navigate('/login')}
-                                    className="text-sm font-semibold text-slate-600 hover:text-primary-600 transition-colors px-4 py-2"
+                                    className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-white transition-colors px-4 py-2"
                                 >
                                     Se connecter
                                 </button>
@@ -142,7 +148,10 @@ const LandingPage: React.FC = () => {
                                 >
                                     Essai gratuit
                                 </button>
-                            </>
+                                <div className="ml-2">
+                                    <ThemeToggle />
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -152,9 +161,6 @@ const LandingPage: React.FC = () => {
             {/* HERO SECTION                                */}
             {/* ═══════════════════════════════════════════ */}
             <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden">
-                {/* Background decorations */}
-                <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary-100/30 rounded-full blur-[150px] -translate-y-1/2 translate-x-1/3" />
-                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-primary-200/20 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/3" />
 
                 <div className="max-w-7xl mx-auto px-6 relative z-10">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">

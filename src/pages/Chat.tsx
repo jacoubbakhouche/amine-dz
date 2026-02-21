@@ -14,6 +14,14 @@ import { supabase } from '../lib/supabase';
 import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../contexts/AuthContext';
+import { pipeline, env } from '@xenova/transformers';
+
+// Configuration for local/remote models
+env.allowLocalModels = false; // Disable loading from public/models/
+// No need to set remoteHost, the default HuggingFace host is correct.
+
+// Global reference for the embedding pipeline
+let embeddingPipeline: any = null;
 
 
 const PromptCard = ({ title, desc, icon: Icon, onClick }: { title: string, desc: string, icon: any, onClick: () => void }) => (
@@ -52,7 +60,7 @@ const TypingText = ({ text, onComplete }: { text: string, onComplete?: () => voi
 const Chat: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, session, loading: authLoading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -71,10 +79,29 @@ const Chat: React.FC = () => {
         }
     }, [location, navigate]);
 
-    // Load most recent conversation on mount (SELECT only — allowed by RLS)
+    // Load conversations/messages when ID changes or user is set
+    useEffect(() => {
+        const fetchMessages = async () => {
+            if (!user || !currentConversationId) return;
+
+            const { data: msgs } = await supabase
+                .from('chat_messages')
+                .select('role, content')
+                .eq('conversation_id', currentConversationId)
+                .order('created_at', { ascending: true });
+
+            if (msgs) {
+                setMessages(msgs as any);
+            }
+        };
+
+        fetchMessages();
+    }, [user, currentConversationId]);
+
+    // Initial load: get most recent conversation if none active
     useEffect(() => {
         const initChat = async () => {
-            if (!user) return;
+            if (!user || currentConversationId) return;
 
             const { data: convs } = await supabase
                 .from('conversations')
@@ -85,16 +112,6 @@ const Chat: React.FC = () => {
 
             if (convs && convs.length > 0) {
                 setCurrentConversationId(convs[0].id);
-
-                const { data: msgs } = await supabase
-                    .from('chat_messages')
-                    .select('role, content')
-                    .eq('conversation_id', convs[0].id)
-                    .order('created_at', { ascending: true });
-
-                if (msgs) {
-                    setMessages(msgs as any);
-                }
             }
         };
 
@@ -120,80 +137,72 @@ const Chat: React.FC = () => {
             return;
         }
 
-        // Use the session from AuthContext (reliable after onAuthStateChange)
-        // instead of getSession() which can return null during session restoration
-        const accessToken = session?.access_token;
-
-        if (!accessToken) {
-            // Fallback: try to get session directly
-            const { data: sessionData } = await supabase.auth.getSession();
-            const fallbackToken = sessionData.session?.access_token;
-            if (!fallbackToken) {
-                setMessages(prev => [...prev, {
-                    role: 'assistant',
-                    content: '⚠️ Session expirée. Veuillez vous reconnecter pour continuer.'
-                }]);
-                return;
-            }
-            // Use fallback token
-            await sendToEdgeFunction(text, fallbackToken);
-            return;
+        try {
+            await sendToEdgeFunction(text);
+        } catch (err) {
+            console.error("Critical handleSendMessage error:", err);
+            setLoading(false);
+            setStatusText('');
         }
-
-        await sendToEdgeFunction(text, accessToken);
     };
 
-    const sendToEdgeFunction = async (text: string, accessToken: string) => {
+    const [statusText, setStatusText] = useState('');
 
-        // Optimistically add user message to UI
-        const newMessages = [...messages, { role: 'user' as const, content: text }];
-        setMessages(newMessages);
+    const sendToEdgeFunction = async (text: string) => {
+        if (!text.trim()) return;
+
+        // 1. Optimistic Update (Instant UI)
+        const userMsg = { role: 'user' as const, content: text };
+        setMessages(prev => [...prev, userMsg]);
         setInput('');
         setLoading(true);
+        setStatusText("Preparing AI...");
 
         try {
-            // Call Edge Function — it handles EVERYTHING:
-            // conversation creation, clinical data lookup, Groq API, message saving
+            // 2. Vectorization (Local & Free)
+            if (!embeddingPipeline) {
+                setStatusText("Waking up AI model...");
+                embeddingPipeline = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+            }
+
+            setStatusText("Analyzing question...");
+            const output = await embeddingPipeline(text, { pooling: 'mean', normalize: true });
+            const queryVector = Array.from(output.data);
+
+            // 3. Fast Edge Function Call
+            setStatusText("Consulting Medical AI...");
             const { data, error } = await supabase.functions.invoke('chat-consultation', {
                 body: {
                     question: text,
-                    history: messages.map(m => ({ role: m.role, content: m.content })),
+                    queryVector,
+                    history: messages.slice(-4).map(m => ({ role: m.role, content: m.content })),
                     conversationId: currentConversationId
-                },
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
                 }
             });
 
-            if (error) {
-                let serverError = error.message || "Unknown error";
-                try {
-                    if (error.context && typeof error.context.json === 'function') {
-                        const errorBody = await error.context.json();
-                        serverError = errorBody?.error || serverError;
-                    }
-                } catch (_) {
-                    // Couldn't parse error body
-                }
-                throw new Error(serverError);
-            }
+            if (error) throw error;
 
-            // Edge Function returns { content, conversationId }
-            const aiResponse = data?.content || "No response generated.";
-            const returnedConvId = data?.conversationId;
-
-            // Store the conversationId from the server (could be newly created)
-            if (returnedConvId && !currentConversationId) {
-                setCurrentConversationId(returnedConvId);
+            // 4. Success
+            const aiResponse = data?.content || "عذراً، لم أتمكن من الحصول على إجابة.";
+            if (data?.conversationId && !currentConversationId) {
+                setCurrentConversationId(data.conversationId);
             }
 
             setMessages(prev => [...prev, { role: 'assistant', content: aiResponse, isNew: true }]);
-        } catch (error: any) {
-            console.error("[Chat] Error:", error);
-            const errorMsg = error?.message || "Unknown error";
-            setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ Error: ${errorMsg}` }]);
+        } catch (err: any) {
+            console.error("[Chat Error]:", err);
+            let errorMsg = "عذراً، حدث خطأ في النظام. يرجى المحاولة لاحقاً.";
+
+            if (err.message?.includes('Unexpected token')) {
+                errorMsg = "⚠️ خطأ في قاعدة البيانات: لم نتمكن من العثور على الدالة المطلوبة. تأكد من تشغيل ملف SQL المرفق.";
+            } else if (err.message) {
+                errorMsg = `⚠️ ${err.message}`;
+            }
+
+            setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
         } finally {
             setLoading(false);
+            setStatusText('');
         }
     };
 
@@ -207,8 +216,8 @@ const Chat: React.FC = () => {
     }
 
     return (
-        <div className="flex h-screen bg-[#F8F9FC] text-slate-900 font-sans overflow-hidden">
-            <Sidebar />
+        <div className="flex h-screen bg-[#F8F9FC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans overflow-hidden transition-colors">
+            <Sidebar onSelectConversation={setCurrentConversationId} />
 
             <main className="flex-1 flex flex-col relative pb-20 md:pb-0">
                 <div ref={chatEndRef} className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar px-4 md:px-8 py-6 md:py-12">
@@ -269,7 +278,7 @@ const Chat: React.FC = () => {
                                         >
                                             <div className={`max-w-[90%] md:max-w-[80%] p-4 md:p-6 rounded-2xl md:rounded-3xl ${msg.role === 'user'
                                                 ? 'bg-primary-600 text-white shadow-lg'
-                                                : 'bg-white text-slate-800 border border-slate-100 shadow-sm'
+                                                : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-100 dark:border-slate-800 shadow-sm'
                                                 }`}>
                                                 {msg.role === 'assistant' && msg.isNew ? (
                                                     <TypingText text={msg.content} />
@@ -319,9 +328,11 @@ const Chat: React.FC = () => {
                                             animate={{ opacity: 1 }}
                                             className="flex justify-start"
                                         >
-                                            <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm flex items-center gap-2">
+                                            <div className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-2">
                                                 <Loader2 className="w-5 h-5 text-primary-600 animate-spin" />
-                                                <span className="text-xs md:text-sm text-slate-500 font-medium">AI is thinking...</span>
+                                                <span className="text-sm font-medium italic animate-pulse text-slate-800 dark:text-white">
+                                                    {statusText || "AI is thinking..."}
+                                                </span>
                                             </div>
                                         </motion.div>
                                     )}
@@ -333,7 +344,7 @@ const Chat: React.FC = () => {
 
                 {/* Chat Input Area */}
                 <div className="max-w-4xl mx-auto w-full px-4 md:px-8 pb-4 md:pb-8">
-                    <div className="bg-white rounded-[24px] md:rounded-[32px] p-4 md:p-6 shadow-xl border border-slate-100">
+                    <div className="bg-white dark:bg-slate-900 rounded-[24px] md:rounded-[32px] p-4 md:p-6 shadow-xl border border-slate-100 dark:border-slate-800 transition-colors">
                         <div className="flex items-center justify-between mb-2 px-1 md:px-2">
                             <button className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-slate-500 bg-slate-50 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors">
                                 <Globe className="w-3 md:w-3.5 h-3 md:h-3.5" /> All Web <ChevronDown className="w-3 md:w-3.5 h-3 md:h-3.5" />

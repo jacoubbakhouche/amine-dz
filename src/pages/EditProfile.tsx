@@ -7,7 +7,8 @@ import {
     ArrowLeft,
     CheckCircle2,
     AlertCircle,
-    Loader2
+    Loader2,
+    LogOut
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -127,6 +128,15 @@ const EditProfile: React.FC = () => {
             setTimeout(() => {
                 window.location.reload();
             }, 1000);
+        }
+    };
+
+    const handleLogout = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            setMessage({ type: 'error', text: error.message });
+        } else {
+            navigate('/login');
         }
     };
 
@@ -287,6 +297,18 @@ const EditProfile: React.FC = () => {
                                             <Save className="w-5 h-5" />
                                         )}
                                         Save Changes
+                                    </button>
+                                </div>
+
+                                {/* Logout Button */}
+                                <div className="pt-6 border-t border-slate-100 mt-6 text-center">
+                                    <button
+                                        type="button"
+                                        onClick={handleLogout}
+                                        className="inline-flex items-center gap-2 text-rose-500 hover:text-rose-600 font-bold text-sm tracking-wide uppercase transition-colors"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        Log out from account
                                     </button>
                                 </div>
                             </form>
