@@ -55,7 +55,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         // Disable real auth listeners for bypass mode
-        setLoading(false);
     }, []);
 
     return (
