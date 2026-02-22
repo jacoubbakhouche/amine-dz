@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -19,7 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>({
+    const [user] = useState<User | null>({
         id: '00000000-0000-0000-0000-000000000000',
         email: 'guest@pharmasssit.com',
         aud: 'authenticated',
@@ -28,25 +27,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user_metadata: { full_name: 'Guest User' },
         created_at: new Date().toISOString()
     } as User);
-    const [session, setSession] = useState<Session | null>({
+    const [session] = useState<Session | null>({
         access_token: 'mock-token',
         token_type: 'bearer',
         expires_in: 3600,
         refresh_token: 'mock-refresh',
         user: { id: '00000000-0000-0000-0000-000000000000' } as User
     } as Session);
-    const [profile, setProfile] = useState<AuthContextType['profile']>({
+    const [profile] = useState<AuthContextType['profile']>({
         full_name: 'Guest User',
         avatar_url: null,
         specialty: 'Medical Professional',
         date_of_birth: null
     });
-    const [loading, setLoading] = useState(false);
+    const [loading] = useState(false);
 
-    const fetchProfile = async (userId: string) => {
-        // Disabled for auth bypass
-        console.log('fetchProfile bypassed for user:', userId);
-    };
+
 
     const refreshProfile = async () => {
         // Disabled for auth bypass

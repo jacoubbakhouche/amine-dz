@@ -11,7 +11,6 @@ import {
     Loader2,
     Menu,
     Home,
-    MessageSquare,
     History,
     User
 } from 'lucide-react';
