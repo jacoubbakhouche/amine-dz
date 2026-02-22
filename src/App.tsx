@@ -15,10 +15,10 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+            <Route path="/profile" element={<EditProfile />} />
             {/* Fallback route */}
             <Route path="*" element={<Navigate to="/chat" replace />} />
           </Routes>

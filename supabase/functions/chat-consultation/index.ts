@@ -48,53 +48,146 @@ Deno.serve(async (req) => {
 
         if (!question || !queryVector) throw new Error("Missing required fields (question/vector)");
 
-        // --- Optimized Query for Numerical Search (GEL38GR -> GEL 38 GR) ---
-        const optimizedQuery = question.replace(/([a-zA-Z])(\d)/g, '$1 $2').replace(/(\d)([a-zA-Z])/g, '$1 $2');
-        console.log("Original Query:", question);
-        console.log("Optimized Query:", optimizedQuery);
+        // --- Input Cleaning & Keyword Extraction ---
+        // 1. Basic Cleaning
+        const cleanInput = question.toLowerCase().trim().replace(/[؟?؟،,.[\]]/g, ' ');
 
-        // --- 1. Histroy Management (Independent Try-Catch) ---
+        // 2. Numerical/Alphanumeric Optimization (GEL38GR -> GEL 38 GR)
+        const optimizedQuery = cleanInput.replace(/([a-zA-Z])(\d)/g, '$1 $2').replace(/(\d)([a-zA-Z])/g, '$1 $2');
+
+        // 3. Automated Keyword Extraction (extract words > 3 chars)
+        const keywords = optimizedQuery.split(/\s+/)
+            .filter(word => word.length > 3)
+            .sort((a, b) => b.length - a.length);
+
+        // Important: Use only the top keywords for text search to avoid paragraph noise
+        const searchKeywords = keywords.slice(0, 5).join(' ');
+
+        console.log(`[DEBUG] Input question: "${question}"`);
+        console.log(`[DEBUG] Clean Input: "${cleanInput}"`);
+        console.log(`[DEBUG] Extraction Keywords: "${searchKeywords}"`);
+
+        // Log vector info
+        const isZeroVector = queryVector.every((v: number) => v === 0);
+        console.log(`[DEBUG] Vector dimensions: ${queryVector.length}, Is Zero Vector: ${isZeroVector}`);
+
+        // --- 0.5 Table Check ---
+        const { count, error: countError } = await db.from('clinical_embeddings').select('*', { count: 'exact', head: true });
+        console.log(`[DEBUG] Total rows in clinical_embeddings: ${count}, Error: ${countError?.message || 'none'}`);
+
+        // --- 1. History Management ---
         let activeConvId = conversationId;
         try {
             if (activeConvId) {
-                const { data: exists } = await db.from('conversations').select('id').eq('id', activeConvId).single();
+                const { data: exists } = await db.from('conversations').select('id').eq('id', activeConvId).maybeSingle();
                 if (!exists) activeConvId = null;
             }
             if (!activeConvId) {
-                const { data: newConv } = await db.from('conversations').insert({ user_id: userId, title: question.slice(0, 50) }).select().single();
+                const { data: newConv } = await db.from('conversations').insert({ user_id: userId, title: question.slice(0, 50) }).select().maybeSingle();
                 activeConvId = newConv?.id;
             }
             await db.from('chat_messages').insert({ conversation_id: activeConvId, user_id: userId, role: 'user', content: question });
         } catch (e) { console.error("DB History Error (Ignored):", e.message); }
 
-        // --- 2. Clinical Search (Independent Try-Catch) ---
+        // --- 2. Clinical Search (Hybrid with Progressive Threshold) ---
         let context = "";
         try {
-            const { data: results, error: rpcError } = await db.rpc('match_clinical_data', {
+            console.log(`[DEBUG] RPC match_clinical_data - Dimensions: ${queryVector ? queryVector.length : 'NULL'}`);
+
+            // Tier 1: Initial search (match_threshold: 0.05) - More permissive for Copy-Paste
+            let { data: results, error: rpcError } = await db.rpc('match_clinical_data', {
                 query_embedding: queryVector,
-                query_text: optimizedQuery,
-                match_threshold: 0.1,
-                match_count: 5,
-                p_source: null
+                query_text: searchKeywords, // Use ONLY extracted keywords
+                match_threshold: 0.05,
+                match_count: 5
             });
-            if (!rpcError && results) {
-                context = results.map((r: any) => `[Source: ${r.source}] ${r.content}`).join("\n---\n");
+
+            console.log('Search Results (RPC Tier 1):', results ? results.length : 0);
+
+            // Tier 2: Extreme recovery if nothing found (threshold: 0.0)
+            if ((!results || results.length === 0) && !rpcError) {
+                console.log("[DEBUG] Tier 1 found 0 results. Trying Tier 2 (threshold: 0.0)...");
+                const { data: resultsTier2 } = await db.rpc('match_clinical_data', {
+                    query_embedding: queryVector,
+                    query_text: searchKeywords,
+                    match_threshold: 0.0,
+                    match_count: 5
+                });
+                results = resultsTier2;
+                console.log('Search Results (RPC Tier 2):', results ? results.length : 0);
+            }
+
+            if (rpcError) console.error("[DEBUG] RPC Error:", rpcError.message);
+
+            if (results && results.length > 0) {
+                console.log(`[DEBUG] Final Results count: ${results.length}`);
+                context = results.map((r: any) => `[ID: ${r.id}] [Source: ${r.source}] ${r.content}`).join("\n---\n");
+            } else {
+                console.log("[DEBUG] Primary search failed. Starting Multi-stage Keyword Loop...");
+
+                // Multi-stage Fallback: Loop through significant keywords
+                const fallbackContexts = [];
+                const topKeywords = keywords.slice(0, 3); // Top 3 keywords for precision
+
+                for (const kw of topKeywords) {
+                    console.log(`[DEBUG] Attempting fallback for keyword: "${kw}"`);
+                    const { data: kwMatches } = await db.from('clinical_embeddings')
+                        .select('id, source, content')
+                        .ilike('content', `%${kw}%`)
+                        .limit(2);
+
+                    if (kwMatches && kwMatches.length > 0) {
+                        fallbackContexts.push(...kwMatches);
+                    }
+                }
+
+                if (fallbackContexts.length > 0) {
+                    console.log(`[DEBUG] Found ${fallbackContexts.length} total matches via Multi-stage loop.`);
+                    // Remove duplicates by ID
+                    const uniqueMatches = Array.from(new Map(fallbackContexts.map(item => [item.id, item])).values());
+                    context = uniqueMatches.map((r: any) => `[ID: ${r.id}] [Source: ${r.source}] ${r.content}`).join("\n---\n");
+                }
             }
         } catch (e) { console.error("Search Error (Ignored):", e.message); }
 
-        // --- 3. AI Completion with Timeout ---
-        console.log("Preparing AI prompt...");
-        const systemPrompt = `أنت مساعد طبي وصيدلاني دقيق للغاية. تعمل في "الوضع السريري الآمن".
-قاعدتك الذهبية: يجب أن تستخرج الإجابات، والجرعات، والتركيزات حصرياً وبشكل حرفي من "السياق المسترجع" أدناه.
-- يمنع منعاً باتاً استخدام معلوماتك العامة أو بيانات التدريب الخاصة بك.
-- يمنع منعاً باتاً استنتاج جرعات مضادات حيوية أو تركيزات صيدلانية غير موجودة بوضوح في السياق.
-- إذا كان السؤال عن منتج، تركيز، أو جرعة غير متوفرة صراحةً في السياق، يجب أن ترد قائلاً: "عذراً، هذا المنتج أو هذه الجرعة غير مدرجة في قاعدة البيانات السريرية الآمنة المعتمدة لدينا." ولا تقترح أي شيء من خارج السياق.
+        // --- 2.5 Hard Lock (Hamiya Al-Qouswa) ---
+        // If no data was found even after Multi-stage search, STOP here to prevent AI hallucinations.
+        if (!context || context.trim() === "") {
+            console.log("[HARD LOCK] No clinical data found. Bypassing AI to prevent hallucinations.");
+            const lockMessage = "عذراً، هذا المنتج أو هذه المعلومات غير مدرجة في قاعدة البيانات السريرية المعتمدة لدينا حالياً. يرجى مراجعة الصيدلي مباشرة.";
 
-السياق المسترجع:
-${context || "لا توجد بيانات مباشرة متوفرة حالياً."}`;
+            // Save the failure message to history as well
+            if (activeConvId) {
+                await db.from('chat_messages').insert({ conversation_id: activeConvId, user_id: userId, role: 'assistant', content: lockMessage });
+            }
+
+            return new Response(JSON.stringify({ content: lockMessage, conversationId: activeConvId }), {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
+        // --- 3. AI Completion ---
+        console.log("[DEBUG] Final Context being sent to AI:", context ? "Populated" : "EMPTY");
+        console.log("البيانات المسترجعة من DB:", context);
+
+        const systemPrompt = `إليك هويتك وتعليماتك الصارمة:
+1. أنت "Pharmassist"، مساعد صيدلي ذكي متخصص في تحليل البيانات السريرية.
+2. مهمتك: الإجابة على استفسارات المستخدمين بناءً على "المستندات المرفقة" فقط.
+3. **ذكاء التجميع (Aggregation)**: إذا سأل المستخدم عن "مشكلة" أو "عرض صحي" (مثل جفاف الفم)، قم بفحص كل المستندات المرفقة. إذا وجدت أكثر من منتج يعالج نفس المشكلة، اذكرهم جميعاً للمستخدم كخيارات متاحة.
+4. **ربط الأعراض**: بما أن البيانات بالفرنسية، إذا سأل المستخدم بالعربية، ابحث عن الروابط المنطقية (مثلاً: جفاف الفم = Sécheresse buccale / Xerostomia).
+5. **أسلوب الرد**:
+   - ابدأ بالترحيب.
+   - قدم الحلول المتاحة في قاعدة بياناتنا: "بناءً على السجلات السريرية المتوفرة، لدينا الحلول التالية لـ [المشكلة]:"
+   - لكل منتج، اذكر (الاسم، الاستخدامات، وكيفية الاستعمال).
+   - في النهاية، أضف دائماً نصيحة بزيارة الطبيب.
+6. **بروتوكول الفشل**: إذا لم تجد أي منتج يتعلق نهائياً بالعرض المذكور بعد البحث، عندها فقط قل: "عذراً، هذه المعلومات غير مدرجة في قاعدة البيانات السريرية المعتمدة لدينا حالياً. يرجى مراجعة الصيدلي مباشرة."
+
+**المستندات المرفقة (Context):**
+${context || "لا توجد بيانات متوفرة حالياً."}`;
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         console.log("Calling Groq API...");
         const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -113,12 +206,11 @@ ${context || "لا توجد بيانات مباشرة متوفرة حالياً.
             throw new Error("AI Service temporary unavailable.");
         }
 
-        console.log("Parsing Groq Response...");
         const groqData = await groqRes.json();
         const aiContent = groqData.choices?.[0]?.message?.content || "No response.";
         console.log("AI Response Received.");
 
-        // --- 4. Final Save (Non-blocking) ---
+        // --- 4. Final Save ---
         if (activeConvId) {
             db.from('chat_messages').insert({ conversation_id: activeConvId, user_id: userId, role: 'assistant', content: aiContent })
                 .then(({ error }) => error && console.error("Final Save error"));

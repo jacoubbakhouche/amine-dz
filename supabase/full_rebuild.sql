@@ -42,17 +42,22 @@ BEGIN
   SELECT
     ce.id, ce.source, ce.content, ce.metadata,
     1 - (ce.embedding <=> query_embedding) AS similarity,
-    ts_rank_cd(to_tsvector('simple', ce.content), websearch_to_tsquery('simple', query_text)) AS text_rank
+    ts_rank_cd(to_tsvector('simple', ce.content), plainto_tsquery('simple', query_text)) AS text_rank
   FROM clinical_embeddings ce
   WHERE (p_source IS NULL OR ce.source = p_source)
     AND (
+      -- Match by vector similarity
       (1 - (ce.embedding <=> query_embedding) > match_threshold)
       OR 
-      (to_tsvector('simple', ce.content) @@ websearch_to_tsquery('simple', query_text))
+      -- Match by full-text search (more permissive than websearch)
+      (to_tsvector('simple', ce.content) @@ plainto_tsquery('simple', query_text))
+      OR
+      -- Fallback to simple ILIKE for very short keywords or fuzzy names
+      (ce.content ILIKE '%' || query_text || '%')
     )
   ORDER BY 
-    (ts_rank_cd(to_tsvector('simple', ce.content), websearch_to_tsquery('simple', query_text)) * 3.0) + 
-    (1 - (ce.embedding <=> query_embedding)) DESC
+    similarity DESC,
+    text_rank DESC
   LIMIT match_count;
 END;
 $$;

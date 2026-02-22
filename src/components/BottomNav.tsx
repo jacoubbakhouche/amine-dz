@@ -34,7 +34,7 @@ const BottomNav: React.FC<{ onHistoryClick?: () => void }> = ({ onHistoryClick }
     const location = useLocation();
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-2 pb-safe-area-inset-bottom flex items-center justify-around z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 px-2 pb-safe-area-inset-bottom flex items-center justify-around z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
             <NavItem
                 icon={Home}
                 label="Home"

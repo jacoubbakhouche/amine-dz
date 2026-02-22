@@ -19,64 +19,47 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [session, setSession] = useState<Session | null>(null);
-    const [profile, setProfile] = useState<AuthContextType['profile']>(null);
-    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<User | null>({
+        id: '00000000-0000-0000-0000-000000000000',
+        email: 'guest@pharmasssit.com',
+        aud: 'authenticated',
+        role: 'authenticated',
+        app_metadata: {},
+        user_metadata: { full_name: 'Guest User' },
+        created_at: new Date().toISOString()
+    } as User);
+    const [session, setSession] = useState<Session | null>({
+        access_token: 'mock-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'mock-refresh',
+        user: { id: '00000000-0000-0000-0000-000000000000' } as User
+    } as Session);
+    const [profile, setProfile] = useState<AuthContextType['profile']>({
+        full_name: 'Guest User',
+        avatar_url: null,
+        specialty: 'Medical Professional',
+        date_of_birth: null
+    });
+    const [loading, setLoading] = useState(false);
 
     const fetchProfile = async (userId: string) => {
-        const { data } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url, specialty, date_of_birth')
-            .eq('id', userId)
-            .single();
-
-        if (data) {
-            setProfile(data);
-        }
+        // Disabled for auth bypass
+        console.log('fetchProfile bypassed for user:', userId);
     };
 
     const refreshProfile = async () => {
-        if (user) {
-            await fetchProfile(user.id);
-        }
+        // Disabled for auth bypass
     };
 
     const signOut = async () => {
-        await supabase.auth.signOut();
-        setUser(null);
-        setSession(null);
-        setProfile(null);
+        // For development, we don't actually sign out
+        console.log('Sign out bypassed');
     };
 
     useEffect(() => {
-        // Use onAuthStateChange as the SINGLE source of truth
-        // It fires INITIAL_SESSION on mount, so no need for a separate getSession()
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_event, newSession) => {
-                setSession(newSession);
-                setUser(newSession?.user ?? null);
-
-                if (newSession?.user) {
-                    try {
-                        await fetchProfile(newSession.user.id);
-                    } catch (err) {
-                        console.error('Error fetching profile:', err);
-                    }
-                } else {
-                    setProfile(null);
-                }
-                setLoading(false);
-            }
-        );
-
-        // Safety net: if auth never resolves, stop loading after 5s
-        const timeout = setTimeout(() => setLoading(false), 5000);
-
-        return () => {
-            subscription.unsubscribe();
-            clearTimeout(timeout);
-        };
+        // Disable real auth listeners for bypass mode
+        setLoading(false);
     }, []);
 
     return (
