@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Activity,
     Search,
     Plus,
     Home,
@@ -65,11 +64,11 @@ const Sidebar: React.FC<{ onSelectConversation?: (id: string) => void }> = ({ on
             <aside className="w-24 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col items-center py-8 gap-10 h-full overflow-y-auto custom-scrollbar no-scrollbar relative z-30 transition-colors">
                 {/* Logo Icon - Redirects to Landing Page */}
                 <div
-                    className="w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/40 cursor-pointer hover:scale-105 transition-transform"
+                    className="w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/10 cursor-pointer hover:scale-105 active:scale-95 transition-all overflow-hidden"
                     onClick={() => navigate('/')}
                     title="Page d'accueil"
                 >
-                    <Activity className="text-white w-7 h-7" />
+                    <img src="/og-image.png" alt="Logo" className="w-full h-full object-cover" />
                 </div>
 
                 <div className="flex flex-col gap-6 flex-1">

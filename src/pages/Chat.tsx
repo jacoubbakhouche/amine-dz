@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase, supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 import { useLocation, useNavigate } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
+
 import { useAuth } from '../contexts/AuthContext';
 import { pipeline, env } from '@xenova/transformers';
 
@@ -247,14 +247,16 @@ const Chat: React.FC = () => {
     return (
         <div className="flex h-screen bg-[#F8F9FC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans overflow-hidden transition-colors">
             <Sidebar onSelectConversation={setCurrentConversationId} />
-            <BottomNav onHistoryClick={() => setMessages([])} />
 
-            <main className="flex-1 flex flex-col relative pb-20 md:pb-0">
+            <main className="flex-1 flex flex-col relative pb-0">
                 {/* Mobile Top Header */}
                 <div className="md:hidden flex items-center justify-between p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-50 sticky top-0">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                            Px
+                    <div
+                        className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => navigate('/')}
+                    >
+                        <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md flex items-center justify-center bg-white dark:bg-slate-800">
+                            <img src="/og-image.png" alt="Logo" className="w-full h-full object-cover" />
                         </div>
                         <span className="font-heading font-bold text-slate-800 dark:text-white">Pharmasssit</span>
                     </div>
@@ -276,19 +278,22 @@ const Chat: React.FC = () => {
                                     className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden z-50 py-2"
                                 >
                                     {[
-                                        { icon: Home, label: 'Home', path: '/chat?new=true' },
-                                        { icon: History, label: 'History', path: '/chat' }, // Can be linked to a modal or section later
-                                        { icon: User, label: 'Profile', path: '/profile' }
+                                        { icon: Home, label: 'Home', path: '/chat', onClick: () => navigate('/chat') },
+                                        { icon: Plus, label: 'New Chat', path: '/chat?new=true', onClick: () => navigate('/chat?new=true') },
+                                        { icon: History, label: 'History', path: '/chat', onClick: () => { setMessages([]); setMobileMenuOpen(false); } },
+                                        { icon: User, label: 'Profile', path: '/profile', onClick: () => navigate('/profile') }
                                     ].map((item, idx) => (
                                         <button
                                             key={idx}
                                             onClick={() => {
-                                                navigate(item.path);
+                                                item.onClick();
                                                 setMobileMenuOpen(false);
                                             }}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary-600 transition-colors text-left"
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left border-b border-slate-50 dark:border-slate-800 last:border-0"
                                         >
-                                            <item.icon className="w-4 h-4" />
+                                            <div className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500">
+                                                <item.icon className="w-4 h-4" />
+                                            </div>
                                             {item.label}
                                         </button>
                                     ))}
