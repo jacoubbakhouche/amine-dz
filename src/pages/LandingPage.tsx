@@ -99,7 +99,7 @@ const LandingPage: React.FC = () => {
     );
 
     return (
-        <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors overflow-x-hidden">
+        <div className="relative min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors overflow-x-hidden">
             <DottedSurface className="opacity-70" />
 
             {/* ═══════════════════════════════════════════ */}

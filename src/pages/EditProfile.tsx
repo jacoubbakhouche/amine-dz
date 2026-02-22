@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import BottomNav from '../components/BottomNav';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -141,18 +140,18 @@ const EditProfile: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen bg-[#F8F9FC] text-slate-900 font-sans overflow-hidden">
+        <div className="flex h-screen bg-[#F8F9FC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans overflow-hidden transition-colors">
             <Sidebar />
 
             <main className="flex-1 overflow-y-auto no-scrollbar">
-                <header className="px-12 py-8 flex items-center justify-between">
+                <header className="px-12 py-8 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/50 bg-white dark:bg-slate-900/50 backdrop-blur-md">
                     <button
                         onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-slate-400 hover:text-slate-600 transition-colors font-medium"
+                        className="flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors font-medium"
                     >
                         <ArrowLeft className="w-5 h-5" /> Back
                     </button>
-                    <h1 className="text-xl font-bold text-slate-900">Edit Profile</h1>
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Edit Profile</h1>
                     <div className="w-20" /> {/* Spacer */}
                 </header>
 
@@ -160,7 +159,7 @@ const EditProfile: React.FC = () => {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-[24px] md:rounded-[32px] border border-slate-100 shadow-xl p-6 md:p-10"
+                        className="bg-white dark:bg-slate-900 rounded-[24px] md:rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-xl p-6 md:p-10"
                     >
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -315,7 +314,6 @@ const EditProfile: React.FC = () => {
                         )}
                     </motion.div>
                 </div>
-                <BottomNav />
             </main>
         </div>
     );

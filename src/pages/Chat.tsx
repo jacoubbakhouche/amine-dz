@@ -32,7 +32,7 @@ const PromptCard = ({ title, desc, icon: Icon, onClick }: { title: string, desc:
     <motion.button
         whileHover={{ y: -4, transition: { duration: 0.2 } }}
         onClick={onClick}
-        className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all text-left group min-w-[200px] md:min-w-0 md:h-full flex-shrink-0"
+        className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all text-left group min-w-[240px] md:min-w-0 md:h-full flex-shrink-0 snap-start"
     >
         <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-2 leading-tight">{title}</h4>
         <p className="text-[10px] text-slate-400 dark:text-slate-500 mb-4">{desc}</p>
@@ -248,7 +248,7 @@ const Chat: React.FC = () => {
         <div className="flex h-screen bg-[#F8F9FC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans overflow-hidden transition-colors">
             <Sidebar onSelectConversation={setCurrentConversationId} />
 
-            <main className="flex-1 flex flex-col relative pb-0">
+            <main className="flex-1 flex flex-col relative pb-0 min-w-0 w-full overflow-x-hidden">
                 {/* Mobile Top Header */}
                 <div className="md:hidden flex items-center justify-between p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 z-50 sticky top-0">
                     <div
@@ -313,13 +313,13 @@ const Chat: React.FC = () => {
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     className="flex flex-col items-center justify-center min-h-[50vh] md:min-h-[60vh] py-8"
                                 >
-                                    <h1 className="text-3xl md:text-5xl font-bold font-heading mb-4 text-center leading-tight">
+                                    <h1 className="text-2xl md:text-5xl font-bold font-heading mb-4 text-center leading-tight px-4 w-full">
                                         Clinical Support <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-500">Engine</span><br />
                                         <span className="text-slate-800 dark:text-white">Deterministic Insights</span>
                                     </h1>
-                                    <p className="text-slate-400 dark:text-slate-500 text-[10px] md:text-sm mb-8 md:mb-12 text-center max-w-xs md:max-w-md">Query the official dental guidelines and product databases with zero hallucination.</p>
+                                    <p className="text-slate-400 dark:text-slate-500 text-[10px] md:text-sm mb-8 md:mb-12 text-center max-w-xs md:max-w-md px-4">Query the official dental guidelines and product databases with zero hallucination.</p>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full mb-8 md:mb-12">
+                                    <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-8 md:mb-12 overflow-x-auto no-scrollbar snap-x snap-mandatory px-4 md:px-0 pb-4 md:pb-0">
 
                                         <PromptCard
                                             title="Abscess (Child)"
@@ -427,7 +427,7 @@ const Chat: React.FC = () => {
                 </div>
 
                 {/* Chat Input Area */}
-                <div className="max-w-4xl mx-auto w-full px-4 md:px-8 pb-4 md:pb-8">
+                <div className="max-w-4xl mx-auto w-full px-3 md:px-8 pb-3 md:pb-8">
                     <div className="bg-white dark:bg-slate-900 rounded-[24px] md:rounded-[32px] p-4 md:p-6 shadow-xl border border-slate-100 dark:border-slate-800 transition-colors">
                         <div className="flex items-center justify-between mb-2 px-1 md:px-2">
                             <button className="flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-slate-500 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full border border-slate-100 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
