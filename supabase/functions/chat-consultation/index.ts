@@ -150,13 +150,16 @@ Deno.serve(async (req) => {
             }
         } catch (e) { console.error("Search Error (Ignored):", e.message); }
 
-        // --- 2.5 Hard Lock (Hamiya Al-Qouswa) ---
-        // If no data was found even after Multi-stage search, STOP here to prevent AI hallucinations.
+        // --- 2.5 Hard Lock (Anti-hallucination) ---
         if (!context || context.trim() === "") {
-            console.log("[HARD LOCK] No clinical data found. Bypassing AI to prevent hallucinations.");
-            const lockMessage = "عذراً، هذا المنتج أو هذه المعلومات غير مدرجة في قاعدة البيانات السريرية المعتمدة لدينا حالياً. يرجى مراجعة الصيدلي مباشرة.";
+            console.log("[HARD LOCK] No clinical data found. Bypassing AI.");
 
-            // Save the failure message to history as well
+            // Detect language for the failure message
+            const isArabicQuery = /[\u0600-\u06FF]/.test(question);
+            const lockMessage = isArabicQuery
+                ? "عذراً، هذا المنتج أو هذه المعلومات غير مدرجة في قاعدة البيانات السريرية المعتمدة لدينا حالياً. يرجى مراجعة الصيدلي مباشرة."
+                : "Désolé, ce produit ou cette information n'est pas répertorié dans notre base de données clinique agréée pour le moment. Veuillez consulter directement votre pharmacien.";
+
             if (activeConvId) {
                 await db.from('chat_messages').insert({ conversation_id: activeConvId, user_id: userId, role: 'assistant', content: lockMessage });
             }
@@ -171,20 +174,21 @@ Deno.serve(async (req) => {
         console.log("[DEBUG] Final Context being sent to AI:", context ? "Populated" : "EMPTY");
         console.log("البيانات المسترجعة من DB:", context);
 
-        const systemPrompt = `إليك هويتك وتعليماتك الصارمة:
-1. أنت "Pharmassist"، مساعد صيدلي ذكي متخصص في تحليل البيانات السريرية.
-2. مهمتك: الإجابة على استفسارات المستخدمين بناءً على "المستندات المرفقة" فقط.
-3. **ذكاء التجميع (Aggregation)**: إذا سأل المستخدم عن "مشكلة" أو "عرض صحي" (مثل جفاف الفم)، قم بفحص كل المستندات المرفقة. إذا وجدت أكثر من منتج يعالج نفس المشكلة، اذكرهم جميعاً للمستخدم كخيارات متاحة.
-4. **ربط الأعراض**: بما أن البيانات بالفرنسية، إذا سأل المستخدم بالعربية، ابحث عن الروابط المنطقية (مثلاً: جفاف الفم = Sécheresse buccale / Xerostomia).
-5. **أسلوب الرد**:
-   - ابدأ بالترحيب.
-   - قدم الحلول المتاحة في قاعدة بياناتنا: "بناءً على السجلات السريرية المتوفرة، لدينا الحلول التالية لـ [المشكلة]:"
-   - لكل منتج، اذكر (الاسم، الاستخدامات، وكيفية الاستعمال).
-   - في النهاية، أضف دائماً نصيحة بزيارة الطبيب.
-6. **بروتوكول الفشل**: إذا لم تجد أي منتج يتعلق نهائياً بالعرض المذكور بعد البحث، عندها فقط قل: "عذراً، هذه المعلومات غير مدرجة في قاعدة البيانات السريرية المعتمدة لدينا حالياً. يرجى مراجعة الصيدلي مباشرة."
+        const systemPrompt = `You are "Pharmassist", an intelligent pharmacist assistant.
+CRITICAL INSTRUCTIONS:
+1. RESPONSE LANGUAGE: You MUST respond in the same language as the user's question (Arabic or French).
+2. KNOWLEDGE BASE: Your only source of truth is the "Context" provided below. Do not use external information.
+3. AGGREGATION: If the user asks about a "problem" or "symptom" (e.g., dry mouth), analyze all documents. If multiple products treat the same issue, list ALL of them as available options.
+4. MAPPING: Since the data is in French, if the user asks in Arabic, find the logical links (e.g., جفاف الفم = Sécheresse buccale).
+5. RESPONSE STYLE:
+   - Start with a polite welcome.
+   - Introduce found solutions (e.g., "Based on clinical records, here are the solutions for [Problem]:").
+   - For each product, mention: Name, Uses, and Usage instructions.
+   - Always conclude with a recommendation to consult a doctor or pharmacist.
+6. FAILURE PROTOCOL: If no product is found in the context after searching, strictly follow the system's rejection message.
 
-**المستندات المرفقة (Context):**
-${context || "لا توجد بيانات متوفرة حالياً."}`;
+**Context (Clinical Records):**
+${context || "No clinical data available."}`;
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
