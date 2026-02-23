@@ -194,12 +194,13 @@ const Chat: React.FC = () => {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'apikey': supabaseAnonKey
+                    'apikey': supabaseAnonKey,
+                    'Authorization': `Bearer ${supabaseAnonKey}`
                 },
                 body: JSON.stringify({
                     question: text,
                     queryVector,
-                    history: messages.slice(-4).map(m => ({ role: m.role, content: m.content })),
+                    history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
                     conversationId: currentConversationId
                 })
             });
@@ -208,7 +209,15 @@ const Chat: React.FC = () => {
                 throw new Error(`Connection error: ${response.status} ${response.statusText}`);
             }
 
-            const data = await response.json();
+            // Safe parse: read as text first to catch HTML error pages
+            const responseText = await response.text();
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch {
+                console.error("[Chat] Non-JSON response received:", responseText.substring(0, 300));
+                throw new Error("Server returned an invalid response. Please check Edge Function deployment.");
+            }
             if (data?.error && !data?.content) throw new Error(data.error);
 
             // 4. Success

@@ -16,8 +16,13 @@ if (!supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Paths to your JSON files in Downloads
-const DENTAIRE_PATH = '/Users/bakhouche/Downloads/dentaire_ia_ready (1).json';
-const ABX_PATH = '/Users/bakhouche/Downloads/Antibiotiques dentaires (1).json';
+const PATHS = {
+    DENTAIRE: '/Users/bakhouche/Downloads/dentaire_ia_ready (1).json',
+    ABX: '/Users/bakhouche/Downloads/Antibiotiques dentaires.json',
+    ENFANT: '/Users/bakhouche/Downloads/base_enfant_dentaire (1).json',
+    MAPPING: '/Users/bakhouche/Downloads/mapping_adulte (1).json',
+    KCE: '/Users/bakhouche/Downloads/dental_abx_kce_esc (1).json'
+};
 
 async function generateEmbeddings() {
     console.log("🚀 Starting Local Vectorization Process (all-MiniLM-L6-v2)...");
@@ -35,66 +40,85 @@ async function generateEmbeddings() {
     console.log("🧹 Cleaning old embeddings...");
     await supabase.from('clinical_embeddings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-    // 2. Load and Process dentaire_ia_ready.json
-    if (fs.existsSync(DENTAIRE_PATH)) {
-        console.log("\n📦 Processing dentaire_ia_ready.json...");
-        const products = JSON.parse(fs.readFileSync(DENTAIRE_PATH, 'utf-8'));
-        console.log(`Found ${products.length} products to vectorize.`);
-
-        for (let i = 0; i < products.length; i++) {
-            const p = products[i];
-            // Merging Name, Uses (Indications), and Description (Mechanisms/Advice)
-            const indicationsStr = Array.isArray(p.indications) ? p.indications.join(', ') : (p.indications || 'N/A');
-            const content = `Product: ${p.nom}\nUses: ${indicationsStr}\nDescription: ${p.mecanisme_action || ''} ${p.conseil_usage || ''}`.trim();
+    // Helper function to embed and insert
+    const processItems = async (items: any[], sourceName: string, formatContent: (item: any) => string) => {
+        console.log(`\n📦 Processing ${items.length} items for source: ${sourceName}...`);
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const content = formatContent(item);
 
             try {
                 const output = await pipe(content, { pooling: 'mean', normalize: true });
                 const embedding = Array.from(output.data);
 
-                await supabase.from('clinical_embeddings').insert({
-                    source: 'dental_products',
+                const { error } = await supabase.from('clinical_embeddings').insert({
+                    source: sourceName,
                     content: content,
-                    metadata: p,
+                    metadata: item,
                     embedding: embedding
                 });
+
+                if (error) {
+                    console.error(`Supabase Insert Error at index ${i}:`, error.message);
+                }
             } catch (err: any) {
-                console.error(`\nError processing product ${i}:`, err.message);
+                console.error(`\nError processing item ${i} in ${sourceName}:`, err.message);
             }
-            if ((i + 1) % 10 === 0 || i === products.length - 1) {
-                process.stdout.write(`\rProgress: ${i + 1}/${products.length}`);
+
+            if ((i + 1) % 10 === 0 || i === items.length - 1) {
+                process.stdout.write(`\rProgress: ${i + 1}/${items.length}`);
             }
         }
+        console.log(); // Newline after progress bar
+    };
+
+    const readJson = (path: string) => JSON.parse(fs.readFileSync(path, 'utf-8').replace(/^\uFEFF/, ''));
+
+    // 2. Load and Process dentaire_ia_ready.json
+    if (fs.existsSync(PATHS.DENTAIRE)) {
+        const products = readJson(PATHS.DENTAIRE);
+        await processItems(products, 'dental_products', (p) => {
+            const indicationsStr = Array.isArray(p.indications) ? p.indications.join(', ') : (p.indications || 'N/A');
+            return `Product: ${p.nom}\nUses: ${indicationsStr}\nDescription: ${p.mecanisme_action || ''} ${p.conseil_usage || ''}`.trim();
+        });
     }
 
-    // 3. Load and Process Antibiotiques dentaires.json
-    if (fs.existsSync(ABX_PATH)) {
-        console.log("\n\n📦 Processing Antibiotiques dentaires.json...");
-        const abxData = JSON.parse(fs.readFileSync(ABX_PATH, 'utf-8'));
+    // 3. Load and Process base_enfant_dentaire.json
+    if (fs.existsSync(PATHS.ENFANT)) {
+        const childProducts = readJson(PATHS.ENFANT);
+        await processItems(childProducts.produits || [], 'dental_products_child', (p) => {
+            const indicationsStr = Array.isArray(p.indications) ? p.indications.join(', ') : (p.indications || 'N/A');
+            const conseilsStr = Array.isArray(p.conseils) ? p.conseils.join(', ') : (p.conseils || '');
+            return `Product: ${p.nom_produit}\nAge Group: ${p.section_age || ''}\nUses: ${indicationsStr}\nDosage: ${p.posologie || ''}\nAdvice: ${conseilsStr}`.trim();
+        });
+    }
+
+    // 4. Load and Process mapping_adulte.json
+    if (fs.existsSync(PATHS.MAPPING)) {
+        const mappingObj = readJson(PATHS.MAPPING);
+        const mappingItems = Object.entries(mappingObj).map(([key, value]: [string, any]) => ({ category: key, ...value }));
+        await processItems(mappingItems, 'category_mapping', (m) => {
+            const kw = Array.isArray(m.keywords) ? m.keywords.join(', ') : '';
+            const cnks = Array.isArray(m.cnk) ? m.cnk.join(', ') : '';
+            return `Category: ${m.category}\nKeywords: ${kw}\nRelated CNKs: ${cnks}`.trim();
+        });
+    }
+
+    // 5. Load and Process Antibiotiques dentaires.json
+    if (fs.existsSync(PATHS.ABX)) {
+        const abxData = readJson(PATHS.ABX);
         const rules = abxData.rules || [];
-        console.log(`Found ${rules.length} antibiotic rules to vectorize.`);
+        await processItems(rules, 'antibiotic_rules', (r) => {
+            return `Rule: ${r.id}\nCondition/Uses: ${JSON.stringify(r.condition)}\nRecommendation/Description: ${JSON.stringify(r.recommendation)}`.trim();
+        });
+    }
 
-        for (let i = 0; i < rules.length; i++) {
-            const r = rules[i];
-            // Merging Rule ID, Condition (Uses), and Recommendation (Description)
-            const content = `Rule: ${r.id}\nCondition/Uses: ${JSON.stringify(r.condition)}\nRecommendation/Description: ${JSON.stringify(r.recommendation)}`.trim();
-
-            try {
-                const output = await pipe(content, { pooling: 'mean', normalize: true });
-                const embedding = Array.from(output.data);
-
-                await supabase.from('clinical_embeddings').insert({
-                    source: 'antibiotic_rules',
-                    content: content,
-                    metadata: r,
-                    embedding: embedding
-                });
-            } catch (err: any) {
-                console.error(`\nError processing rule ${i}:`, err.message);
-            }
-            if ((i + 1) % 5 === 0 || i === rules.length - 1) {
-                process.stdout.write(`\rProgress: ${i + 1}/${rules.length}`);
-            }
-        }
+    // 6. Load and Process dental_abx_kce_esc.json
+    if (fs.existsSync(PATHS.KCE)) {
+        const kceRules = readJson(PATHS.KCE);
+        await processItems(kceRules.rules || [], 'antibiotic_rules_kce', (r) => {
+            return `Rule: ${r.id}\nCondition/Uses: ${JSON.stringify(r.condition)}\nRecommendation/Description: ${JSON.stringify(r.recommendation)}`.trim();
+        });
     }
 
     console.log("\n\n✅ Final Vectorization Complete! (Local & Free)");
