@@ -175,7 +175,7 @@ const LandingPage: React.FC = () => {
                                 <span className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">Intelligence Clinique B2B</span>
                             </div>
 
-                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white leading-[1.1] mb-6 font-heading">
+                            <h1 className="text-4xl md:text-5xl lg:text-7xl font-black text-slate-900 dark:text-white leading-[1.05] mb-6 font-heading tracking-tighter">
                                 L'Assistance Décisionnelle{' '}
                                 <span className="text-gradient">Intelligente</span>{' '}
                                 pour Experts de Santé.

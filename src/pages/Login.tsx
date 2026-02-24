@@ -27,15 +27,19 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8F9FC] flex items-center justify-center p-6">
+        <div className="min-h-screen bg-mesh flex items-center justify-center p-6 relative overflow-hidden">
+            {/* Background Orbs */}
+            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-primary-600/20 rounded-full blur-[150px] animate-pulse z-0" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[150px] animate-pulse z-0" />
+
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="max-w-md w-full bg-white rounded-[32px] p-10 shadow-xl border border-slate-100"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="max-w-md w-full glass-card p-10 shadow-2xl relative z-10"
             >
                 <div className="text-center mb-10">
-                    <h2 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-                    <p className="text-slate-500">Log in to your medical AI assistant</p>
+                    <h2 className="text-4xl font-bold font-heading text-white mb-3">Welcome Back</h2>
+                    <p className="text-white/50 font-medium">Log in to your medical AI assistant</p>
                 </div>
 
                 {error && (
@@ -46,22 +50,22 @@ const Login: React.FC = () => {
 
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                     <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
                         <input
                             type="email"
                             placeholder="Email Address"
-                            className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-slate-700 focus:ring-2 focus:ring-primary-500/20"
+                            className="glass-input w-full pl-12 text-white placeholder:text-white/20"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
                         />
                     </div>
                     <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
                         <input
                             type="password"
                             placeholder="Password"
-                            className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-slate-700 focus:ring-2 focus:ring-primary-500/20"
+                            className="glass-input w-full pl-12 text-white placeholder:text-white/20"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -71,7 +75,7 @@ const Login: React.FC = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-primary-600 text-white rounded-2xl py-4 font-bold shadow-lg shadow-primary-500/30 hover:bg-primary-700 transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-white/10 text-white border border-white/20 rounded-2xl py-5 font-bold shadow-2xl hover:bg-white/20 transition-all flex items-center justify-center gap-2 backdrop-blur-xl"
                     >
                         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Sign In <ArrowRight className="w-5 h-5" /></>}
                     </button>
@@ -86,13 +90,13 @@ const Login: React.FC = () => {
 
                 <button
                     onClick={handleGoogleLogin}
-                    className="w-full bg-white border border-slate-200 text-slate-700 rounded-2xl py-4 font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2 mb-8"
+                    className="w-full bg-white/5 border border-white/10 text-white rounded-2xl py-4 font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-2 mb-8"
                 >
-                    <Chrome className="w-5 h-5" /> Google
+                    <Chrome className="w-5 h-5 text-white/50" /> Google
                 </button>
 
-                <p className="text-center text-slate-500 text-sm">
-                    Don't have an account? <Link to="/register" className="text-primary-600 font-bold">Register</Link>
+                <p className="text-center text-white/40 text-sm font-medium">
+                    Don't have an account? <Link to="/register" className="text-white font-bold hover:text-primary-400">Register</Link>
                 </p>
             </motion.div>
         </div>
