@@ -62,8 +62,8 @@ RULES:
         } else {
             console.warn("[DEBUG] Groq expansion request failed, using original.");
         }
-    } catch (e) {
-        console.warn("[DEBUG] Query expansion error (timeout or network):", e.message);
+    } catch (e: any) {
+        console.warn("[DEBUG] Query expansion error (timeout or network):", (e as Error).message);
     }
 
     return question;
@@ -71,8 +71,8 @@ RULES:
 
 // --- Helper: Extract structured data from context ---
 function parseContextForStructure(context: string): { drugs: any[], symptoms: string[] } {
-    const drugs = [];
-    const symptoms = [];
+    const drugs: any[] = [];
+    const symptoms: string[] = [];
 
     // Split by document separator
     const documents = context.split("\n---\n");
@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
                 activeConvId = newConv?.id;
             }
             await db.from('chat_messages').insert({ conversation_id: activeConvId, user_id: userId, role: 'user', content: question });
-        } catch (e) { console.error("DB History Error (Ignored):", e.message); }
+        } catch (e: any) { console.error("DB History Error (Ignored):", (e as Error).message); }
 
         // --- 2. Clinical Search (Using expanded query) ---
         let context = "";
@@ -317,14 +317,14 @@ ${r.content}
                     context = uniqueMatches.map((r: any) => `[ID: ${r.id}] [Source: ${r.source}] ${r.content}`).join("\n---\n");
                 }
             }
-        } catch (e) { console.error("Search Error (Ignored):", e.message); }
+        } catch (e: any) { console.error("Search Error (Ignored):", (e as Error).message); }
 
         // --- 2.5 Hard Lock (Anti-hallucination) - ENHANCED ---
         // Check if question is just a greeting
-        const greetingPatterns = /^(مرحبا|السلام عليكم|صباح الخير|مساء الخير|السلام|hi|hello|bonjour|salut|bonsoir|hey|coucou|ça va)\b/i;
-        const isGreeting = greetingPatterns.test(question.trim());
+        const greetingPatternsCheck = /^(مرحبا|السلام عليكم|صباح الخير|مساء الخير|السلام|hi|hello|bonjour|salut|bonsoir|hey|coucou|ça va)\b/i;
+        const isGreetingCheck = greetingPatternsCheck.test(question.trim());
 
-        if ((!context || context.trim() === "") && !isGreeting) {
+        if ((!context || context.trim() === "") && !isGreetingCheck) {
             console.log("[HARD LOCK] No clinical data found (or similarity too low). User is not greeting. Blocking.");
 
             // Detect language for the failure message
@@ -347,8 +347,8 @@ ${r.content}
         console.log("[DEBUG] Final Context being sent to AI:", context ? "Populated" : "EMPTY");
 
         // Detect greeting patterns
-        const greetingPatterns = /^(مرحبا|السلام عليكم|صباح الخير|مساء الخير|السلام|hi|hello|bonjour|salut|bonsoir|hey|coucou|ça va)\b/i;
-        const isGreeting = greetingPatterns.test(question.trim());
+        const greetingPatternsFinal = /^(مرحبا|السلام عليكم|صباح الخير|مساء الخير|السلام|hi|hello|bonjour|salut|bonsoir|hey|coucou|ça va)\b/i;
+        const isGreetingFinal = greetingPatternsFinal.test(question.trim());
 
         const systemPrompt = `أنت مساعد صيدلي متخصص يعتمد 100% على البيانات السريرية المرفقة فقط.
 
@@ -369,7 +369,7 @@ ${r.content}
 - شرح وتفصيل البيانات بأسلوب احترافي
 
 ═══════════════════════════════════════════════════════════════
-${isGreeting ? `
+${isGreetingFinal ? `
 
 🎯 هذه الرسالة تحية فقط:
 - رد بترحيب احترافي ودود
@@ -447,7 +447,7 @@ ${context || "لا توجد بيانات متوفرة حالياً لهذا ال
         // --- 4. Final Save ---
         if (activeConvId) {
             db.from('chat_messages').insert({ conversation_id: activeConvId, user_id: userId, role: 'assistant', content: aiContent })
-                .then(({ error }) => error && console.error("Final Save error"));
+                .then((result: any) => result?.error && console.error("Final Save error"));
         }
 
         return new Response(JSON.stringify({ content: aiContent, conversationId: activeConvId }), {
