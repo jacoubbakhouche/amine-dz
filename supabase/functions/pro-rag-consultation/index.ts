@@ -1,5 +1,5 @@
 // ============================================================
-// CORS Headers - السماح لأي موقع بالاتصال
+// CORS Headers - Allow all sites to connect
 // ============================================================
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          content: "عذراً، لم نجد معلومات عن هذا في قاعدة بياناتنا. يرجى استشارة طبيب متخصص.",
+          content: "Désolé, aucune information n'a été trouvée dans notre base de données. Veuillez consulter un professionnel de santé.",
           retrievedDocuments: 0,
           conversationId: conversationId,
         }),
@@ -190,9 +190,9 @@ Deno.serve(async (req) => {
     });
 
     // Build context from results
-    let context = '### السياق المستخرج من قاعدة بيانات الأدوية:\n\n';
+    let context = '### Clinical Data from Pharmaceutical Database:\n\n';
     searchResults.forEach((result: any, idx: number) => {
-      context += `**[${idx + 1}] ${result.source}** (درجة التطابق: ${(result.combined_score * 100).toFixed(1)}%)\n`;
+      context += `**[${idx + 1}] ${result.source}** (Match Score: ${(result.combined_score * 100).toFixed(1)}%)\n`;
       context += `${result.content}\n\n`;
       context += '---\n\n';
     });
@@ -209,54 +209,54 @@ Deno.serve(async (req) => {
 
     if (groqApiKey) {
       try {
-        // ⚠️ System Prompt - Adapté selon si c'est une première question ou non
+        // ⚠️ System Prompt - Adapted based on first medicine question or follow-up
         const systemPrompt = isFirstMedicineQuestion 
-          ? `أنت "الخبير الصيدلاني الرقمي" في تطبيق Pharmasssit.
+          ? `You are a "Digital Pharmaceutical Expert" in the Pharmasssit application.
 
-**IMPORTANT - MODE FICHE COMPLÈTE:**
-C'est la première question sur ce médicament. Vous DEVEZ fournir une réponse COMPLÈTE et STRUCTURÉE:
+**IMPORTANT - COMPLETE RECORD MODE:**
+This is the first question about this medication. You MUST provide a COMPLETE and STRUCTURED response:
 
-📋 **Format obligatoire:**
+📋 **Mandatory Format:**
 
-1️⃣ **Nom du produit**
-- Nom commercial + (CNK si disponible)
+1️⃣ **Product Name**
+- Brand name + (CNK if available)
 
-2️⃣ **Composition complète**
-- Principes actifs ET excipients avec doses exactes
+2️⃣ **Complete Composition**
+- Active ingredients AND excipients with exact doses
 
 3️⃣ **Indications**
-- Tous les usages documentés
+- All documented uses
 
-4️⃣ **Public cible**
-- Âge, profil du patient
+4️⃣ **Target Population**
+- Age, patient profile
 
-5️⃣ **Mode d'emploi**
-- Posologie exacte, fréquence, conditions (avant/après repas, etc.)
+5️⃣ **Instructions for Use**
+- Exact dosage, frequency, conditions (before/after meals, etc.)
 
-6️⃣ **Situations à éviter**
-- Contre-indications et précautions
+6️⃣ **Situations to Avoid**
+- Contraindications and precautions
 
-**Règles:**
-1. Utilisez UNIQUEMENT les informations du contexte ci-dessous
-2. Ne pas inventer de données
-3. Si une section n'a pas d'info, écrivez: "Information non disponible"
-4. Terminez par: "🚫 **Remarque:** Consultez toujours un professionnel de santé."
+**Rules:**
+1. Use ONLY information from the context below
+2. Do not invent data
+3. If a section has no info, write: "Information not available"
+4. End with: "🚫 **Note:** Always consult a healthcare professional."
 
-**Contexte disponible:**
+**Available Context:**
 ${context}`
-          : `أنت "الخبير الصيدلاني الرقمي" في تطبيق Pharmasssit.
+          : `You are a "Digital Pharmaceutical Expert" in the Pharmasssit application.
 
-**التعليمات الحتمية:**
-1. استخدم **فقط** المعلومات من السياق المقدم أدناه
-2. لا تستخدم معلومات من ذاكرتك عن الأدوية
-3. إذا كان السياق **فارغ تماماً (لا يوجد نص)**, قل فقط: "لم نجد بيانات"
-4. إذا كان السياق **يحتوي على بيانات**, استخرج المعلومات الكاملة (الاسم، الجرعة، الموانع، التحذيرات، الاستخدام)
-5. أضف دائماً في النهاية: "ملاحظة: هذه معلومات استرشادية، استشر الطبيب"
-6. قدم الإجابة في صيغة نقاط واضحة ومنظمة
+**Mandatory Instructions:**
+1. Use ONLY information from the context provided below
+2. Do not use information from your memory about medications
+3. If context is **completely empty (no text)**, say only: "No data found"
+4. If context **contains data**, extract complete information (name, dosage, contraindications, warnings, usage)
+5. Always end with: "Note: This is advisory information, consult your doctor"
+6. Present the answer as clear, organized bullet points
 
-**الأسلوب:** احترافي، بنقاط واضحة، بالعربية/الفرنسية حسب السؤال.
+**Style:** Professional, clear bullet points, in French.
 
-**السياق (المعلومات المتاحة):**
+**Context (Available Information):**
 ${context}`;
 
         console.log('[Groq] System prompt length:', systemPrompt.length);
@@ -276,7 +276,7 @@ ${context}`;
             model: 'llama-3.3-70b-versatile',
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: `سؤالي: ${question}` }
+              { role: 'user', content: `My question: ${question}` }
             ],
             temperature: 0.2,
             max_tokens: 1000,
@@ -307,7 +307,7 @@ ${context}`;
       }
     } else {
       console.warn('[Groq] GROQ_API_KEY not set');
-      consultation = `خطأ: API key غير متوفر. عدد النتائج المسترجعة: ${searchResults.length}`;
+      consultation = `Error: API key not available. Number of retrieved results: ${searchResults.length}`;
     }
 
     // ============================================================
