@@ -39,9 +39,9 @@ async function expandQuery(question: string, history: any[], groqKey: string): P
 
 RULES:
 - Output ONLY the rewritten query, nothing else. No explanations, no greetings.
-- If the user says "other options", "alternatives", or "بدائل", output: "alternatives to [LAST PRODUCT NAME]"
-- If the user says "how to use it", "dosage", "كيفاش نستعملو", output: "[LAST PRODUCT NAME] dosage usage"
-- If the user asks "ماذا عن المنتج السابق", find the previous product in history and output its name.
+- If the user says "other options", "alternatives", output: "alternatives to [LAST PRODUCT NAME]"
+- If the user says "how to use it", "dosage", output: "[LAST PRODUCT NAME] dosage usage"
+- If the user asks about the previous product, find the previous product in history and output its name.
 - If the question is already specific (contains a product name), return it unchanged.
 - NEVER add explanations. Output ONLY the search query string.`
                     },
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
             let previousProductContext = "";
             if (history.length > 0) {
                 const recentAssistantMessages = history.filter((m: any) => m.role === 'assistant').slice(-3);
-                const productPattern = /📦 المنتج: ([^\n]+)|Product: ([^\n]+)/g;
+                const productPattern = /📦 Produit: ([^\n]+)|Product: ([^\n]+)/g;
                 let match;
                 while ((match = productPattern.exec(recentAssistantMessages.map((m: any) => m.content).join(" "))) !== null) {
                     previousProductContext = match[1] || match[2];
@@ -321,7 +321,7 @@ ${r.content}
 
         // --- 2.5 Hard Lock (Anti-hallucination) - ENHANCED ---
         // Check if question is just a greeting
-        const greetingPatternsCheck = /^(مرحبا|السلام عليكم|صباح الخير|مساء الخير|السلام|hi|hello|bonjour|salut|bonsoir|hey|coucou|ça va)\b/i;
+        const greetingPatternsCheck = /^(bonjour|bonsoir|salut|hello|hey|coucou|ça va|comment ça va)\b/i;
         const isGreetingCheck = greetingPatternsCheck.test(question.trim());
 
         if ((!context || context.trim() === "") && !isGreetingCheck) {
