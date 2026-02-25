@@ -12,8 +12,7 @@ import {
     Menu,
     Home,
     History,
-    User,
-    Sparkles
+    User
 } from 'lucide-react';
 import { supabase, supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 import { useLocation, useNavigate } from 'react-router-dom';
