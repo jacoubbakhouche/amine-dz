@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
                 context = uniqueResults.map((r: any) => {
                     return `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📦 المنتج: ${r.source || r.id}
+📦 Produit: ${r.source || r.id}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${r.content}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -327,11 +327,8 @@ ${r.content}
         if ((!context || context.trim() === "") && !isGreetingCheck) {
             console.log("[HARD LOCK] No clinical data found (or similarity too low). User is not greeting. Blocking.");
 
-            // Detect language for the failure message
-            const isArabicQuery = /[\u0600-\u06FF]/.test(question);
-            const lockMessage = isArabicQuery
-                ? "عذراً، لا توجد أدوية في قاعدة بياناتنا السريرية المعتمدة تعالج هذا العرض المحدد حالياً. يرجى مراجعة الصيدلي مباشرة للحصول على الاستشارة المناسبة."
-                : "Désolé, aucun médicament dans notre base de données clinique approuvée ne traite actuellement ce symptôme spécifique. Veuillez consulter directement votre pharmacien pour obtenir les conseils appropriés.";
+            // Failure message (French only - Belgium market)
+            const lockMessage = "Désolé, aucun médicament dans notre base de données clinique approuvée ne traite actuellement ce symptôme spécifique. Veuillez consulter directement votre pharmacien pour obtenir les conseils appropriés.";
 
             if (activeConvId) {
                 await db.from('chat_messages').insert({ conversation_id: activeConvId, user_id: userId, role: 'assistant', content: lockMessage });
@@ -346,100 +343,90 @@ ${r.content}
         // --- 3. AI Completion with Strict System Prompt ---
         console.log("[DEBUG] Final Context being sent to AI:", context ? "Populated" : "EMPTY");
 
-        // Detect greeting patterns
-        const greetingPatternsFinal = /^(مرحبا|السلام عليكم|صباح الخير|مساء الخير|السلام|hi|hello|bonjour|salut|bonsoir|hey|coucو|ça va)\b/i;
+        // Detect greeting patterns (French only)
+        const greetingPatternsFinal = /^(bonjour|bonsoir|salut|hi|hello|hey|coucou|ça va|comment ça va)\b/i;
         const isGreetingFinal = greetingPatternsFinal.test(question.trim());
 
         // Extract product names from context for personalized prompt
-        const productNameMatches = context.match(/📦 المنتج: ([^\n]+)/g) || [];
-        const productNames = productNameMatches.map(m => m.replace('📦 المنتج: ', '').trim());
+        const productNameMatches = context.match(/📦 Produit: ([^\n]+)/g) || [];
+        const productNames = productNameMatches.map(m => m.replace('📦 Produit: ', '').trim());
         
         // Build personalized instruction based on actual data retrieved
         let dataInstructions = "";
         if (productNames.length > 0 && context.length > 0) {
             dataInstructions = `
-⚡ **البيانات المتاحة في هذا الطلب:**
-المنتجات: ${productNames.join(', ')}
+⚡ **Données Disponibles pour cette Demande:**
+Produits: ${productNames.join(', ')}
 
-👉 **تعليمات مهمة:**
-- استخدم فقط البيانات من المنتجات المذكورة أعلاه
-- لا تخلط معلومات منتج بمنتج آخر
-- كل منتج له استخدامات وجرعات مختلفة
-- تأكد من إعطاء المعلومات الصحيحة لكل منتج بالضبط
+👉 **Instructions Critiques:**
+- Utilisez UNIQUEMENT les données des produits listés ci-dessus
+- Ne mélangez pas les informations d'un produit avec un autre
+- Chaque produit a des utilisations et dosages différents
+- Assurez-vous de donner les bonnes informations pour chaque produit exactement
 `;
         }
 
-        const systemPrompt = `أنت مساعد صيدلي متخصص يعتمد 100% على البيانات السريرية المرفقة فقط.
+        const systemPrompt = `Vous êtes un assistant pharmacien spécialisé qui s'appuie 100% uniquement sur les données cliniques fournies.
 
 ═══════════════════════════════════════════════════════════════
-⚖️ القاعدة الذهبية (THE GOLDEN RULE)
+⚖️ LA RÈGLE D'OR (THE GOLDEN RULE)
 ═══════════════════════════════════════════════════════════════
 
-🚫 **ممنوع منعاً باتاً:**
-- أي معلومة تأتي من معرفتك العامة عن الأدوية
-- تخمين أو استنتاج معلومات لم تجدها صراحة في البيانات
-- اختراع جرعات أو موانع استخدام
-- إعطاء نصائح طبية لم تكن في السجلات
-- اقتراح منتجات لم تكن في السياق المرفق
-- نسخ نفس المعلومات من منتج إلى آخر
+🚫 **STRICTEMENT INTERDIT:**
+- Toute information provenant de vos connaissances générales sur les médicaments
+- Deviner ou déduire des informations non trouvées explicitement dans les données
+- Inventer des posologies ou des contre-indications
+- Donner des conseils médicaux non présents dans les dossiers
+- Suggérer des produits ne figurant pas dans le contexte fourni
+- Copier les mêmes informations d'un produit à l'autre
 
-✅ **مسموح فقط:**
-- المعلومات الموجودة صراحة في "المستندات الطبية المرجعية" أدناه
-- التحليل والربط المنطقي بين البيانات المرفقة
-- شرح وتفصيل البيانات بأسلوب احترافي
-- التمييز الواضح بين كل منتج وآخر
+✅ **AUTORISÉ UNIQUEMENT:**
+- Informations explicitement présentes dans les "Données Cliniques de Référence" ci-dessous
+- Analyse et lien logique entre les données fournies
+- Explication et détail des données en style professionnel
+- Distinction claire entre chaque produit
 
 ═══════════════════════════════════════════════════════════════
 ${dataInstructions}
 ═══════════════════════════════════════════════════════════════
-${isGreetingFinal ? `
 
-🎯 هذه الرسالة تحية فقط:
-- رد بترحيب احترافي ودود
-- لا تشر إلى نقص البيانات
-- مثال: "مرحباً! أنا مساعدك الصيدلي. كيف يمكنني مساعدتك في استفساراتك الطبية؟"
-- تجنب الرموز العشوائية
+📋 **Instructions de Traitement des Questions:**
 
-═══════════════════════════════════════════════════════════════
+1️⃣ **Pour la première question sur un médicament/produit:**
+   - Nom du produit + Code (CNK) s'il existe
+   - Formulation complète (principes actifs et excipients) - C'EST LA PRIORITÉ!
+   - Indications (Indication Thérapeutique) - diffère d'un produit à l'autre
+   - Profil Patient Ciblé
+   - Mode d'utilisation (posologie, fréquence) - DOIT être différent pour chaque produit
+   - Avertissements et contre-indications - NE PAS copier d'un autre produit
 
-` : ``}
-📋 **تعليمات التعامل مع الأسئلة:**
+2️⃣ **Pour les questions de suivi (Follow-up):**
+   - Répondez directement à la question posée
+   - Ne répétez pas les informations antérieures
+   - S'il y a un avertissement, commencez par celui-ci
 
-1️⃣ **للسؤال الأول عن دواء/منتج:**
-   - اسم المنتج + الكود (CNK) إن وجد
-   - التركيبة الكاملة (المكونات النشطة والمساعدة) - أهم شيء!
-   - الاستخدامات (Indications) - تختلف من منتج لآخر
-   - الفئة المستهدفة (Profil Patient)
-   - طريقة الاستخدام (الجرعة، عدد المرات) - يجب أن تكون مختلفة لكل منتج
-   - التحذيرات والموانع - لا تنسخ من منتج آخر
+3️⃣ **Lors d'une demande de "plus d'options" ou "alternatives":**
+   - Recherchez dans les données un autre produit de la même catégorie
+   - Mentionnez les différences entre les produits
+   - Chaque produit a des utilisations et posologies différentes
 
-2️⃣ **للسؤال المتابع (Follow-up):**
-   - أجب مباشرة على السؤال فقط
-   - لا تكرر المعلومات السابقة
-   - إذا كان هناك تحذير، ابدأ به
+4️⃣ **Quand une question porte sur un produit non présent dans les données:**
+   - Répondez littéralement: "Désolé, ce produit n'est pas répertorié dans notre base de données clinique approuvée."
+   - NE PAS suggérer d'alternatives de votre propre connaissance
 
-3️⃣ **عند طلب "مزيد" أو "خيارات أخرى":**
-   - ابحث في البيانات عن منتج آخر نفس الفئة
-   - اذكر الفروقات بين المنتجات
-   - كل منتج له استخدامات وجرعات مختلفة
+5️⃣ **Pour les questions peu claires:**
+   - Assumez qu'elles concernent le dernier produit mentionné
+   - Si ce n'est pas clair, demandez une clarification
 
-4️⃣ **عند سؤال على منتج غير موجود في البيانات:**
-   - قل حرفياً: "عذراً، هذا المنتج غير مدرج في قاعدة بياناتنا السريرية المعتمدة."
-   - لا تقترح بدائل من رأسك
-
-5️⃣ **للأسئلة غير الواضحة:**
-   - افترض أنها عن آخر منتج تم ذكره
-   - إن لم يكن واضح، اطلب التوضيح
-
-6️⃣ **عند اكتشاف تعارض (مثل: عمر الطفل < الحد المسموح):**
-   - الأولوية المطلقة لتحذير الأمان
-   - ابدأ بـ: "⚠️ تحذير هام"
+6️⃣ **Lors de la détection d'une contradiction (ex: âge de l'enfant < limite autorisée):**
+   - L'AVERTISSEMENT DE SÉCURITÉ EST LA PRIORITÉ ABSOLUE
+   - Commencez par: "⚠️ AVERTISSEMENT IMPORTANT"
 
 ═══════════════════════════════════════════════════════════════
-📦 المعلومات المرجعية (Reference Information)
+📦 DONNÉES CLINIQUES DE RÉFÉRENCE
 ═══════════════════════════════════════════════════════════════
 
-${context || "لا توجد بيانات متوفرة حالياً لهذا الطلب."}
+${context || "Aucune donnée disponible actuellement pour cette requête."}
 
 ═══════════════════════════════════════════════════════════════`;
 
@@ -481,7 +468,7 @@ ${context || "لا توجد بيانات متوفرة حالياً لهذا ال
 
     } catch (err: any) {
         console.error("Critical Function Fail:", err.message);
-        return new Response(JSON.stringify({ content: "عذراً، حدث خطأ تقني داخلي. يرجى المحاولة مرة أخرى.", error: err.message }), {
+        return new Response(JSON.stringify({ content: "Désolé, une erreur technique interne s'est produite. Veuillez réessayer.", error: err.message }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
