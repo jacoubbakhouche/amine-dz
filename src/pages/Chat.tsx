@@ -220,11 +220,12 @@ const Chat: React.FC = () => {
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setLoading(true);
-        setStatusText("🔍 جاري تحليل السؤال...");
+        setStatusText("🔍 La question est en cours d'analyse...");
 
         try {
             // 2. Use NEW PRO RAG Function (Server-side embedding + hybrid search)
-            setStatusText("📊 جاري معالجة البيانات من قاعدة البيانات...");
+
+            setStatusText("..");
 
             const response = await fetch(`${supabaseUrl}/functions/v1/pro-rag-consultation`, {
                 method: 'POST',
@@ -260,7 +261,7 @@ const Chat: React.FC = () => {
             if (!data?.content) throw new Error("No content in response");
 
             // 3. Success
-            setStatusText("✅ جاري عرض النتيجة...");
+            setStatusText("✅ Le résultat s'affiche...");
             const aiResponse = data.content;
 
             if (data?.conversationId && !currentConversationId) {
@@ -560,7 +561,7 @@ const Chat: React.FC = () => {
                                                         </svg>
                                                     </div>
                                                     <span className="text-sm md:text-[15px] font-medium text-slate-600 dark:text-white/70">
-                                                        {statusText || "جاري المعالجة..."}
+                                                        {statusText || "Traitement en cours..."}
                                                     </span>
                                                 </div>
                                             </div>
