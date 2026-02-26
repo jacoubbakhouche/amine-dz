@@ -51,9 +51,9 @@ Deno.serve(async (req) => {
     console.log('[RAG] Question:', question);
     console.log('[RAG] Conversation ID:', conversationId);
     console.log('[RAG] History type:', typeof history, 'Length:', history?.length || 0);
-    
+
     // Validate history format
-    const validHistory = Array.isArray(history) 
+    const validHistory = Array.isArray(history)
       ? history.filter((msg: any) => msg.role && msg.content)
       : [];
     console.log('[RAG] Valid history items:', validHistory.length);
@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
           question: question,
           history: validHistory
         });
-        
+
         if (!checkError && firstQuestionCheck) {
           isFirstMedicineQuestion = true;
           console.log('[Pipeline] ✓ This is a FIRST MEDICINE QUESTION - will use complete card format');
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
 
         console.log('[Supabase] Calling simple_search RPC...');
         console.log('[Supabase] Query text:', question);
-        
+
         const { data, error } = await supabase.rpc('simple_search', {
           query_text: question,
           match_count: 8,
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
         } else {
           searchResults = data || [];
           console.log(`[Supabase] ✓ Got ${searchResults.length} results`);
-          
+
           // Log first result for debugging
           if (searchResults.length > 0) {
             console.log('[Supabase] First result:', {
@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
     // ============================================================
     console.log('[Pipeline] Step 3: Building context...');
     console.log('[DEBUG] Search results count:', searchResults.length);
-    
+
     // ⚠️ CHECK 1: Empty results - Return early!
     if (searchResults.length === 0) {
       console.log('[Pipeline] ⚠️ No results found in database');
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
     if (groqApiKey) {
       try {
         // ⚠️ System Prompt - Adapted based on first medicine question or follow-up
-        const systemPrompt = isFirstMedicineQuestion 
+        const systemPrompt = isFirstMedicineQuestion
           ? `You are a "Digital Pharmaceutical Expert" in the Pharmasssit application.
 
 **IMPORTANT - COMPLETE RECORD MODE:**
@@ -241,10 +241,14 @@ This is the first question about this medication. You MUST provide a COMPLETE an
 2. Do not invent data
 3. If a section has no info, write: "Information not available"
 4. End with: "🚫 **Note:** Always consult a healthcare professional."
+5. **IMPORTANT:** If the question is not about medications or health products, say: "I can only answer medication-related questions."
 
 **Available Context:**
 ${context}`
           : `You are a "Digital Pharmaceutical Expert" in the Pharmasssit application.
+
+**GREETING RULE:**
+If the user message is only a greeting (e.g., Hello, Hi, Bonjour, Salut), respond with a short professional greeting in French and invite the user to ask about a medication. Do not generate medical information in greeting mode.
 
 **Mandatory Instructions:**
 1. Use ONLY information from the context provided below
@@ -253,6 +257,7 @@ ${context}`
 4. If context **contains data**, extract complete information (name, dosage, contraindications, warnings, usage)
 5. Always end with: "Note: This is advisory information, consult your doctor"
 6. Present the answer as clear, organized bullet points
+7. **IMPORTANT:** If the question is not about medications or health products, say: "I can only answer medication-related questions."
 
 **Style:** Professional, clear bullet points, in French.
 
@@ -264,7 +269,7 @@ ${context}`;
         console.log('[Groq] Context is empty?', context.trim().length === 0);
 
         console.log('[Groq] Sending request with context length:', context.length);
-        
+
         // 2. إرسال الطلب لـ Groq
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -293,7 +298,7 @@ ${context}`;
         } else {
           const errorText = await groqResponse.text();
           console.error('[Groq] Error response:', errorText.substring(0, 300));
-          
+
           try {
             const errorData = JSON.parse(errorText);
             consultation = `Groq API error ${groqResponse.status}: ${errorData.error?.message || errorText}`;

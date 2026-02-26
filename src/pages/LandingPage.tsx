@@ -112,8 +112,8 @@ const LandingPage: React.FC = () => {
             >
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => navigate('/')}>
-                        <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30 group-hover:scale-110 transition-transform">
-                            <Plus className="text-white w-6 h-6 stroke-[3]" />
+                        <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden border border-slate-100 dark:border-slate-800 group-hover:scale-110 transition-transform">
+                            <img src="/og-image.png" alt="Pharmasssit Logo" className="w-full h-full object-cover" />
                         </div>
                         <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white font-heading">Pharmasssit</span>
                     </div>
@@ -230,7 +230,7 @@ const LandingPage: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 1, delay: 0.3 }}
-                            className="relative flex justify-center"
+                            className="relative flex justify-center lg:-mt-20 -mt-10"
                         >
                             <div className="absolute inset-0 bg-gradient-to-br from-primary-200/30 to-primary-100/10 rounded-[3rem] blur-3xl" />
                             <img
@@ -540,8 +540,8 @@ const LandingPage: React.FC = () => {
                         {/* Brand */}
                         <div>
                             <div className="flex items-center gap-2.5 mb-4">
-                                <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
-                                    <Plus className="text-white w-6 h-6 stroke-[3]" />
+                                <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center overflow-hidden border border-slate-700">
+                                    <img src="/og-image.png" alt="Pharmasssit Logo" className="w-full h-full object-cover" />
                                 </div>
                                 <span className="text-xl font-black font-heading">Pharmasssit</span>
                             </div>

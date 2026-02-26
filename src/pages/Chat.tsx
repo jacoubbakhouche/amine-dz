@@ -532,22 +532,32 @@ const Chat: React.FC = () => {
                                         >
                                             <div className="glass-card text-slate-900 dark:text-white p-4 md:p-5 rounded-2xl max-w-[85%] md:max-w-[75%] shadow-lg">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="flex gap-1.5">
-                                                        <motion.div
-                                                            animate={{ scale: [1, 1.2, 1] }}
-                                                            transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
-                                                            className="w-2 h-2 bg-primary-600 dark:bg-primary-400 rounded-full"
-                                                        />
-                                                        <motion.div
-                                                            animate={{ scale: [1, 1.2, 1] }}
-                                                            transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
-                                                            className="w-2 h-2 bg-primary-600 dark:bg-primary-400 rounded-full"
-                                                        />
-                                                        <motion.div
-                                                            animate={{ scale: [1, 1.2, 1] }}
-                                                            transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
-                                                            className="w-2 h-2 bg-primary-600 dark:bg-primary-400 rounded-full"
-                                                        />
+                                                    <div className="flex gap-1.5 items-center justify-center w-8 h-8">
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary-600 dark:text-primary-400">
+                                                            <motion.path
+                                                                d="M3 12h4l1.5-5 4 12 2-9 1.5 2H21"
+                                                                stroke="url(#heartbeat-gradient)"
+                                                                strokeWidth="2.5"
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                initial={{ pathLength: 0, opacity: 0 }}
+                                                                animate={{
+                                                                    pathLength: [0, 1, 1],
+                                                                    opacity: [0, 1, 0]
+                                                                }}
+                                                                transition={{
+                                                                    duration: 2,
+                                                                    ease: "easeInOut",
+                                                                    repeat: Infinity,
+                                                                }}
+                                                            />
+                                                            <defs>
+                                                                <linearGradient id="heartbeat-gradient" x1="3" y1="12" x2="21" y2="12" gradientUnits="userSpaceOnUse">
+                                                                    <stop stopColor="#0ea5e9" /> {/* Electric blue */}
+                                                                    <stop offset="1" stopColor="#a855f7" /> {/* Purple */}
+                                                                </linearGradient>
+                                                            </defs>
+                                                        </svg>
                                                     </div>
                                                     <span className="text-sm md:text-[15px] font-medium text-slate-600 dark:text-white/70">
                                                         {statusText || "جاري المعالجة..."}
