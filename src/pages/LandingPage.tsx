@@ -11,7 +11,6 @@ import {
     Server,
     CheckCircle2,
     ArrowRight,
-    Plus,
     Send,
     Bot,
     User,
