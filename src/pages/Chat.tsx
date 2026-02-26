@@ -119,6 +119,28 @@ const TypewriterHeader = ({ text, delay = 0, className = "", onComplete }: { tex
     );
 };
 
+const MessageSkeleton = () => (
+    <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-start w-full"
+    >
+        <div className="glass-card text-slate-900 dark:text-white p-5 rounded-2xl w-[85%] md:w-[70%] shadow-lg space-y-3">
+            <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-primary-500/10 animate-pulse flex items-center justify-center">
+                    <RefreshCw className="w-4 h-4 text-primary-500 animate-spin" />
+                </div>
+                <div className="h-4 w-32 bg-slate-200 dark:bg-white/10 rounded-full animate-pulse" />
+            </div>
+            <div className="space-y-2">
+                <div className="h-3 w-full bg-slate-200 dark:bg-white/10 rounded-full animate-pulse" />
+                <div className="h-3 w-[90%] bg-slate-200 dark:bg-white/10 rounded-full animate-pulse" />
+                <div className="h-3 w-[75%] bg-slate-200 dark:bg-white/10 rounded-full animate-pulse" />
+            </div>
+        </div>
+    </motion.div>
+);
+
 const Chat: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -525,48 +547,7 @@ const Chat: React.FC = () => {
                                             )}
                                         </motion.div>
                                     ))}
-                                    {loading && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="flex flex-col items-start"
-                                        >
-                                            <div className="glass-card text-slate-900 dark:text-white p-4 md:p-5 rounded-2xl max-w-[85%] md:max-w-[75%] shadow-lg">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="flex gap-1.5 items-center justify-center w-8 h-8">
-                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary-600 dark:text-primary-400">
-                                                            <motion.path
-                                                                d="M3 12h4l1.5-5 4 12 2-9 1.5 2H21"
-                                                                stroke="url(#heartbeat-gradient)"
-                                                                strokeWidth="2.5"
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                initial={{ pathLength: 0, opacity: 0 }}
-                                                                animate={{
-                                                                    pathLength: [0, 1, 1],
-                                                                    opacity: [0, 1, 0]
-                                                                }}
-                                                                transition={{
-                                                                    duration: 2,
-                                                                    ease: "easeInOut",
-                                                                    repeat: Infinity,
-                                                                }}
-                                                            />
-                                                            <defs>
-                                                                <linearGradient id="heartbeat-gradient" x1="3" y1="12" x2="21" y2="12" gradientUnits="userSpaceOnUse">
-                                                                    <stop stopColor="#0ea5e9" /> {/* Electric blue */}
-                                                                    <stop offset="1" stopColor="#a855f7" /> {/* Purple */}
-                                                                </linearGradient>
-                                                            </defs>
-                                                        </svg>
-                                                    </div>
-                                                    <span className="text-sm md:text-[15px] font-medium text-slate-600 dark:text-white/70">
-                                                        {statusText || "Traitement en cours..."}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
+                                    {loading && <MessageSkeleton />}
                                 </div>
                             )}
                         </AnimatePresence>
